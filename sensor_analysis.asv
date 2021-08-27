@@ -1,7 +1,6 @@
 %load dataset
-% use 16 digits of precision(MATLAB default)
-format long % display numbers up to 15 digits
-
+% use default 16 digit precision
+format long %display numbers 15 digits
 data = readmatrix("raw data.csv");
 binTimeStart = data(:,5);
 binTimeEnd = [binTimeStart(2:end); [binTimeStart(end)]];
@@ -14,10 +13,8 @@ LFPValues = data(:,6:end);
 LFPValues = LFPValues.'; %transpose
 LFPValues = LFPValues(:); % collapse into 1d array, columnwisely
 
+pointTimeInterval = binTimeInterval/256;
 pointIndexPerBin = 0 : (nPointsPerBin-1);
-time = binTimeStart + binTimeInterval * (pointIndexPerBin/256);
-time = time.';
-time = time(:);
+timeElapsed = binTimeStart + pointTimeInterval * pointIndexPerBin
 
 
-plot(time, LFPValues)
