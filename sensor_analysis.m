@@ -4,9 +4,7 @@ format long % display numbers up to 15 digits
 
 data = readmatrix("raw data.csv");
 binTimeStart = data(:,5);
-binTimeEnd = [binTimeStart(2:end); [binTimeStart(end)]];
-binTimeInterval = binTimeEnd - binTimeStart;
-binTimeInterval(end) = binTimeInterval(end-1);
+binTimeInterval = diff(binTimeStart);
 
 %turn MFP values into a single 1d array
 LFPValues = data(:,6:end);
