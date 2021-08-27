@@ -1,11 +1,10 @@
 %load dataset
-% use default 16 digit precision
-format long %display numbers 15 digits
+% use 16 digits of precision(MATLAB default)
+
 data = readmatrix("raw data.csv");
 binTimeStart = data(:,5);
-binTimeEnd = [binTimeStart(2:end); [binTimeStart(end)]];
-binTimeInterval = binTimeEnd - binTimeStart;
-binTimeInterval(end) = binTimeInterval(end-1);
+binTimeInterval = diff(binTimeStart);
+binTimeInterval(end+1) = binTimeInterval(end)
 
 %turn MFP values into a single 1d array
 LFPValues = data(:,6:end);
@@ -13,8 +12,13 @@ LFPValues = data(:,6:end);
 LFPValues = LFPValues.'; %transpose
 LFPValues = LFPValues(:); % collapse into 1d array, columnwisely
 
-pointTimeInterval = binTimeInterval/256;
 pointIndexPerBin = 0 : (nPointsPerBin-1);
-timeElapsed = binTimeStart + pointTimeInterval * pointIndexPerBin
+t = binTimeStart + binTimeInterval * (pointIndexPerBin/256);
+t = t.';
+t = t(:);
+Ts = mean(binTimeInterval)/256
+desiredFs = 1/Ts;
 
+[
 
+plot(t, LFPValues)
