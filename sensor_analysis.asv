@@ -7,10 +7,10 @@ binTimeInterval = diff(binTimeStart);
 binTimeInterval(end+1) = binTimeInterval(end)
 
 %turn MFP values into a single 1d array
-LFPValues = data(:,6:end);
-[nBins, nPointsPerBin] = size(LFPValues);
-LFPValues = LFPValues.'; %transpose
-LFPValues = LFPValues(:); % collapse into 1d array, columnwisely
+y = data(:,6:end);
+[nBins, nPointsPerBin] = size(y);
+y = y.'; %transpose
+y = y(:); % collapse into 1d array, columnwisely
 
 %time variable into a single 1d array
 tPercentileInsideBin = linspace(0,255/256,256)
@@ -19,69 +19,127 @@ t = t.';
 t = t(:);
 
 %resample the signal using spline, to make uniform time interval
-Ts = mean(binTimeInterval)/256 % milisecond per timestamp
-desiredFs = 1/Ts %approx. 3000hz. 1/10 of reference code 30000hz
-[LFPValuesResampled, tResampled] = resample(LFPValues, t, desiredFs, 'spline');
+msPerTimestamp = 1000* (mean(binTimeInterval)/256) % milisecond per timestamp. stamp->ms conversion.
+desiredSamplingFrequency = 1000 * (1/msPerTimestamp) %approx. 3000hz. 1/10 of reference code 30000hz
+[yResampled, tResampled] = resample(y, t, desiredSamplingFrequency, 'spline');
 
-plot(t, LFPValues)
-hold on
-plot(tResampled, LFPValuesResampled)
-hold off
-legend('Original', 'Resampled using spline')
+%plot(t, y)
+%hold on
+%plot(tResampled, LFPValuesResampled)
+%hold off
+%legend('Original', 'Resampled using spline')
 
 %apply xxx-xxxx Hz bandpath filter
-LFPValuesfiltered = bandpass(LFPValuesResampled, [1000, 2000], desiredFs);
+yFiltered = bandpass(yResampled, [300, 1000], desiredSamplingFrequency);
 
 subplot(3,1,1);
-plot(tResampled, LFPValuesResampled)
-xlim([min(tResampled), max(tResampled)])
+plot(tResampled, yResampled)
+xlim([min(tResampled), max(tResampled)+1])
 
 subplot(3,1,2);
-plot(tResampled, LFPValuesfiltered)
-xlim([min(tResampled), max(tResampled)])
+plot(tResampled, yFiltered)
+xlim([min(tResampled), max(tResampled)]+1)
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %paramter setting
-thres = 10; %define multiple of sigma
-threshold = -thres.* median(abs(LFPValuesfiltered)/0.6745); %approximate standard deviation with probable error
-waveformHalfWidth = 600 %reference code: 2 * 30 = 60
-time_stampl = []
+thres = 8; %define multiple of sigma
+threshold = -thres.* median(abs(yFiltered)/0.6745); %approximate standard deviation, robust to outliers
+timestampsPrePeak = 600 %reference code: 2ms * 30stamps/ms = 60stamps
+timestampsPostPeak = 600 %reference code: 2ms * 30stamps/ms = 60stamps
+clusternum = 2 % number of clusters for kmeans algorithm
+
+time_stamp = []
 waveform = []
 
 %%spike detection
 count = 0;
-ii = waveformHalfWidth
-while ii < length(LFPValuesfiltered)
-    tmp = LFPValuesfiltered(ii);
+ii = timestampsPrePeak
+while ii < length(yFiltered)
+    tmp = yFiltered(ii);
     if tmp < threshold
-        if ii + waveformHalfWidth < length(LFPValuesfiltered) % spike가 뒷쪽에 있을 경우 waveformwidth가 확보될 때만 기록한다.
+        if ii + timestampsPostPeak < length(yFiltered) % spike가 뒷쪽에 있을 경우 waveformwidth가 확보될 때만 기록한다.
             count = count + 1;
             time_stamp(count) = ii;
-            waveform(count,:) = LFPValuesfiltered( (-waveformHalfWidth : waveformHalfWidth) + ii );
+            waveform(count,:) = yFiltered( (-timestampsPrePeak : timestampsPostPeak) + ii );
         end
-        ii = ii + waveformHalfWidth;
+        ii = ii + timestampsPostPeak;
     else
         ii = ii + 1;
     end
 end
             
-
-%plot((-waveformHalfWidth : waveformHalfWidth)*Ts, waveform')
-%xlabel('time(ms)')
-%ylabel('Voltage(uV)')
+[nSpikes, column] = size(waveform);
+[row2, column2] = size(data);
 
 
+%Figure 1 shows a time window with all the spikes detected and the average waveform
+figure
+%plot 1.1: a time window with all the spikes detected
+subplot(2,1,1) 
+plot((-timestampsPrePeak : timestampsPostPeak)*msPerTimestamp, waveform');
+title(['plot 1.1. total spike number is', num2str(nSpikes)]);
+xlabel('time(ms)')
+ylabel('Voltage(uV)')
 
-%raster plot
-subplot(3,1,3);
+%plot 1.2: the average waveform of spikes
+subplot(2,1,2)
+plot((-timestampsPrePeak : timestampsPostPeak)*msPerTimestamp, mean(waveform));
+title('plot 1.2. mean waveform');
+xlabel('time(ms)')
+ylabel('Voltage(uV)')
+
+
+%% Figure 2 shows the time series and the corresponding raster plot (before clustering)
+% plot 2.1: 
+figure
+time_for_plot = binTimeStart(1) + (1:length(yFiltered))/desiredSamplingFrequency; %timestamp to ms conversion
+subplot(2,1,1)
+plot(time_for_plot, yFiltered);
+xlimYFiltered = binTimeStart(1) + [0, 1 + (length(yFiltered))/desiredSamplingFrequency]
+xlim(xlimYFiltered);
+peaks = findpeaks(yFiltered, 'MinPeakHeight', -3);
+title('plot 2.1. Filtered data')
+xlabel('time(s)')
+ylabel('Voltage(uV)')
+
+
+
+%plot 2.2 raster plot
+subplot(2,1,2)
 hold on
-for ii = 1:length(time_stamp)
-    time_stamp(ii)
-    plot(binTimeStart(1) + [time_stamp(ii), time_stamp(ii)]*Ts, [-1,1], 'k');
+for ii = 1:nSpikes
+    spikeTimestampTuple = binTimeStart(1) + [time_stamp(ii), time_stamp(ii)]/desiredSamplingFrequency
+    plot(spikeTimestampTuple, [-1,1], 'k');
 end
-xlim([min(tResampled), max(tResampled)])
+xlim(xlimYFiltered)
 ylim([-10,10])
+title('plot 2.2. Raster plot');
+xlabel('time(s)');
+ylabel('Raster');
 
-%%dimension reduction (PCA)
+%% dimension reduction (PCA)
+waveformZ = zscore(waveform)
+figure
+[coeff, score, latent, tsquared, explained] = pca(waveformZ);
+h = biplot(coeff(:,1:2), 'Scores', score(:, 1:2)); 
+xlabel('First PC');
+ylabel('Second PC');
+title('plot 3.1. Principal Component Analysis(biplot, not scatterplot)')
+
+
+%% cluster(kmean)
+figure
+bar(explained)
+title('plot 3.2. Explained Variance')
+ylabel('PC')
+
+%% Retain first two principal components
+yeastPC = score(:, 1:2);
+figure
+[clusters, centroid] = kmeans(yeastPC, clusternum);
+gscatter(yeastPC(:,1), yeastPC(:,2), clusters)
+xlabel('First PC');
+ylabel('Second PC');
+title('plot 3.3. Principal Component Scatter Plot with Colored Clusters');
