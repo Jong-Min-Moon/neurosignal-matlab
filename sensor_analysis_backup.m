@@ -19,7 +19,7 @@ t = t.';
 t = t(:);
 
 %resample the signal using spline, to make uniform time interval
-msPerTimestamp = 1000* (mean(binTimeInterval)/256) % milisecond per timestamp. stamp->ms conversion.
+msPerTimestamp = mean(binTimeInterval) * (1000/256) % milisecond per timestamp. stamp->ms conversion.
 desiredSamplingFrequency = 1000 * (1/msPerTimestamp) %approx. 3000hz. 1/10 of reference code 30000hz
 [yResampled, tResampled] = resample(y, t, desiredSamplingFrequency, 'spline');
 
@@ -44,16 +44,22 @@ xlim([min(tResampled), max(tResampled)]+1)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %paramter setting
-thres = 8; %define multiple of sigma
+desiredSamplingFrequency; %defined above.
+thres = 5; %define multiple of sigma
 threshold = -thres.* median(abs(yFiltered)/0.6745); %approximate standard deviation, robust to outliers
-timestampsPrePeak = 600 %reference code: 2ms * 30stamps/ms = 60stamps
-timestampsPostPeak = 600 %reference code: 2ms * 30stamps/ms = 60stamps
-clusternum = 2 % number of clusters for kmeans algorithm
+clusternum = 3 % number of clusters for kmeans algorithm
+pre_time = 2; post_time = 2; %in ms, acquisition time before(pre_time) and after(post_time) detection of a waveform peak
 
-time_stamp = []
-waveform = []
+
+timestampsPrePeak = ceil(pre_time * (desiredSamplingFrequency/1000)) %reference code: 2ms * 30stamps/ms = 60stamps
+timestampsPostPeak = ceil(pre_time * (desiredSamplingFrequency/1000)) %reference code: 2ms * 30stamps/ms = 60stamps
+
+
 
 %%spike detection
+time_stamp = [] %to save.
+waveform = [] % to save.
+
 count = 0;
 ii = timestampsPrePeak
 while ii < length(yFiltered)
@@ -79,7 +85,7 @@ figure
 %plot 1.1: a time window with all the spikes detected
 subplot(2,1,1) 
 plot((-timestampsPrePeak : timestampsPostPeak)*msPerTimestamp, waveform');
-title(['plot 1.1. total spike number is', num2str(nSpikes)]);
+title(['plot 1.1. total spike number is ', num2str(nSpikes)]);
 xlabel('time(ms)')
 ylabel('Voltage(uV)')
 
@@ -92,7 +98,7 @@ ylabel('Voltage(uV)')
 
 
 %% Figure 2 shows the time series and the corresponding raster plot (before clustering)
-% plot 2.1: 
+% plot 2.1: the time series
 figure
 time_for_plot = binTimeStart(1) + (1:length(yFiltered))/desiredSamplingFrequency; %timestamp to ms conversion
 subplot(2,1,1)
@@ -104,9 +110,7 @@ title('plot 2.1. Filtered data')
 xlabel('time(s)')
 ylabel('Voltage(uV)')
 
-
-
-%plot 2.2 raster plot
+%plot 2.2: raster plot
 subplot(2,1,2)
 hold on
 for ii = 1:nSpikes
@@ -119,6 +123,9 @@ title('plot 2.2. Raster plot');
 xlabel('time(s)');
 ylabel('Raster');
 
+
+%% Figure 3 shows the waveforms detected in the PC1 - PC2 plane,
+% along with the projection of the scores of all eigenvectors
 %% dimension reduction (PCA)
 waveformZ = zscore(waveform)
 figure

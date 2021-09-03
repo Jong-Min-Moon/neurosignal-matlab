@@ -1,100 +1,15 @@
-%load dataset
-% use 16 digits of precision(MATLAB default)
 
-data = readmatrix("raw data.csv");
-binTimeStart = data(:,5);
-binTimeInterval = diff(binTimeStart);
-binTimeInterval(end+1) = binTimeInterval(end)
-
-%turn MFP values into a single 1d array
-y = data(:,6:end);
-[nBins, nPointsPerBin] = size(y);
-y = y.'; %transpose
-y = y(:); % collapse into 1d array, columnwisely
-
-%time variable into a single 1d array
-tPercentileInsideBin = linspace(0,255/256,256)
-t = binTimeStart + binTimeInterval * tPercentileInsideBin;
-t = t.';
-t = t(:);
-
-%resample the signal using spline, to make uniform time interval
-msPerTimestamp = mean(binTimeInterval) * (1000/256) % milisecond per timestamp. stamp->ms conversion.
-desiredSamplingFrequency = 1000 * (1/msPerTimestamp) %approx. 3000hz. 1/10 of reference code 30000hz
-[yResampled, tResampled] = resample(y, t, desiredSamplingFrequency, 'spline');
-
-%plot(t, y)
-%hold on
-%plot(tResampled, LFPValuesResampled)
-%hold off
-%legend('Original', 'Resampled using spline')
-
-%apply xxx-xxxx Hz bandpath filter
-yFiltered = bandpass(yResampled, [300, 1000], desiredSamplingFrequency);
-
-subplot(3,1,1);
-plot(tResampled, yResampled)
-xlim([min(tResampled), max(tResampled)+1])
-
-subplot(3,1,2);
-plot(tResampled, yFiltered)
-xlim([min(tResampled), max(tResampled)]+1)
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%paramter setting
-desiredSamplingFrequency; %defined above.
-thres = 5; %define multiple of sigma
-threshold = -thres.* median(abs(yFiltered)/0.6745); %approximate standard deviation, robust to outliers
-clusternum = 3 % number of clusters for kmeans algorithm
-pre_time = 2; post_time = 2; %in ms, acquisition time before(pre_time) and after(post_time) detection of a waveform peak
-
-
-timestampsPrePeak = ceil(pre_time * (desiredSamplingFrequency/1000)) %reference code: 2ms * 30stamps/ms = 60stamps
-timestampsPostPeak = ceil(pre_time * (desiredSamplingFrequency/1000)) %reference code: 2ms * 30stamps/ms = 60stamps
-
-
-
-%%spike detection
-time_stamp = [] %to save.
-waveform = [] % to save.
-
-count = 0;
-ii = timestampsPrePeak
-while ii < length(yFiltered)
-    tmp = yFiltered(ii);
-    if tmp < threshold
-        if ii + timestampsPostPeak < length(yFiltered) % spike가 뒷쪽에 있을 경우 waveformwidth가 확보될 때만 기록한다.
-            count = count + 1;
-            time_stamp(count) = ii;
-            waveform(count,:) = yFiltered( (-timestampsPrePeak : timestampsPostPeak) + ii );
-        end
-        ii = ii + timestampsPostPeak;
-    else
-        ii = ii + 1;
-    end
-end
             
 [nSpikes, column] = size(waveform);
 [row2, column2] = size(data);
 
 
-%Figure 1 shows a time window with all the spikes detected and the average waveform
-figure
-%plot 1.1: a time window with all the spikes detected
-subplot(2,1,1) 
-plot((-timestampsPrePeak : timestampsPostPeak)*msPerTimestamp, waveform');
-title(['plot 1.1. total spike number is ', num2str(nSpikes)]);
-xlabel('time(ms)')
-ylabel('Voltage(uV)')
 
-%plot 1.2: the average waveform of spikes
-subplot(2,1,2)
-plot((-timestampsPrePeak : timestampsPostPeak)*msPerTimestamp, mean(waveform));
-title('plot 1.2. mean waveform');
-xlabel('time(ms)')
-ylabel('Voltage(uV)')
+
+
+
+
+
 
 
 %% Figure 2 shows the time series and the corresponding raster plot (before clustering)
