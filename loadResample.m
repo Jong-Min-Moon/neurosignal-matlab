@@ -1,4 +1,4 @@
-function [tResampled, yResampled, msPerTimestamp, desiredSamplingFrequency] = loadResample(filename)
+function [tResampled, xResampled, msPerTimestamp, desiredSamplingFrequency] = loadResample(filename)
 % load the file, read time interval, convert into 1d array, 
 % and resample into uniform time interval(for passband filtering)
 
@@ -15,11 +15,11 @@ binTimeStart = data(:,5); %assuming that 'time' means starting time.
 binTimeInterval = diff(binTimeStart);
 binTimeInterval(end+1) = binTimeInterval(end);
 
-% y varaible into a single 1d array
-y = data(:,6:end); % data in format of matrix of size nBin * 256 
-% [nBins, nPointsPerBin] = size(y);
-y = transpose(y);
-y = y(:); % collapse into 1d array, columnwisely
+% x varaible into a single 1d array
+x = data(:,6:end); % data in format of matrix of size nBin * 256 
+% [nBins, nPointsPerBin] = size(x);
+x = transpose(x);
+x = x(:); % collapse into 1d array, columnwisely
 
 % time variable into a single 1d array
 tPercentileInsideBin = linspace(0,255/256,256);
@@ -30,4 +30,4 @@ t = t(:);
 %% resample the signal using spline, to make uniform time interval
 msPerTimestamp = mean(binTimeInterval) * (1000/256); % milisecond per timestamp. stamp->ms conversion.
 desiredSamplingFrequency = 1000 * (1/msPerTimestamp); %approx. 3000hz. 1/10 of reference code 30000hz
-[yResampled, tResampled] = resample(y, t, desiredSamplingFrequency, 'spline');
+[xResampled, tResampled] = resample(x, t, desiredSamplingFrequency, 'spline');
