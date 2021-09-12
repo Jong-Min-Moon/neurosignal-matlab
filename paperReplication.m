@@ -31,33 +31,10 @@ filteredLim = [filteredLimMin, filteredLimMax];
 %% detect spikes
 
 % parameters
-thres = 5; %define multiple of sigma (for threshold settings)
-preTime =2; postTime = 2; %in ms, acquisition time before (pre_time) and after (post_time)detection of a waveform peak
+ %define multiple of sigma (for threshold settings)
+ %in ms, acquisition time before (pre_time) and after (post_time)detection of a waveform peak
 
-for i = 1:length(filtered)
-    [timestampsPrePeak, timestampsPostPeak, timeStamp, waveform] = spike(filtered(i).x, filtered(i).sf, thres, preTime, postTime);
-    spikes(i).name = filtered(i).name;
-    spikes(i).timeStamp = timeStamp;
-    spikes(i).waveform = waveform;
-end
-%% pca and k-means
-clusternum = 3;% parameter
 
-for i = 1:length(spikes)
-    [scoreTwoDim, cluster] = pcaKmeans(spikes(i).waveform, clusternum);
-    clusteredPCs(i).name = spikes(i).name;
-    clusteredPCs(i).scores = scoreTwoDim;
-    clusteredPCs(i).clusters = cluster;
-end
-%% figure 2.b.
-
-for i = 1:length(raw)
-    subplot(length(raw), 1, i);
-    plot(raw(i).t, raw(i).x)
-    ylim(rawLim)
-    title(raw(i).name)
-end
-%%
 
 tslim = [min(tResampled), max(tResampled)+1] %xlim for time in second, for later use
 tmslim = 1000 * [min(tResampled), max(tResampled)+1] %xlim for time in milisecond, for later use
@@ -90,65 +67,11 @@ title('Filtered data');
 xlabel('time(s)');
 ylabel('Voltage(uV)');
 
-%plot 2.2: raster plot
-subplot(2,1,2)
-hold on
-for ii = 1:length(time_stamp)
-    spikeTimestampTuple = binTimeStart(1) + [time_stamp(ii), time_stamp(ii)]/desiredSamplingFrequency
-    plot(spikeTimestampTuple, [-1,1], 'k');
-end
-xlim(xlimCalculated);
-ylim([-10,10]);
-title('Raster plot');
-xlabel('time(s)');
-ylabel('Raster');
 
 
 
 
-%% Color raster plot
-figure
-for i=1:clusternum
-    Snumb(i)=0;%counting spikes in each cluster
-end
 
-for ii = 1:length(clusters)
-    if clusters(ii)==1
-        Snumb(1)=Snumb(1)+1;
-        time_stamps(1,Snumb(1))=time_stamp(ii);
-        spikeTimestampTuple = binTimeStart(1) + [time_stamp(ii), time_stamp(ii)]/desiredSamplingFrequency;
-        plot(spikeTimestampTuple,[-1,1],'b');
-        hold on
-    elseif clusters(ii)==2
-        Snumb(2)=Snumb(2)+1;
-        time_stamps(2,Snumb(2))=time_stamp(ii);
-        spikeTimestampTuple = binTimeStart(1) + [time_stamp(ii), time_stamp(ii)]/desiredSamplingFrequency;
-
-        plot(spikeTimestampTuple,[-1,1],'r');
-        hold on
-    elseif clusters(ii)==3
-     Snumb(3)=Snumb(3)+1;
-        time_stamps(3,Snumb(3))=time_stamp(ii);
-        spikeTimestampTuple = binTimeStart(1) + [time_stamp(ii), time_stamp(ii)]/desiredSamplingFrequency;
-
-        plot(spikeTimestampTuple,[-1,1],'g');
-        hold on
-    elseif clusters(ii)==4
-        Snumb(4)=Snumb(4)+1;
-        time_stamps(4,Snumb(4))=time_stamp(ii);
-        spikeTimestampTuple = binTimeStart(1) + [time_stamp(ii), time_stamp(ii)]/desiredSamplingFrequency;
-        
-        plot(spikeTimestampTuple,[-1,1],'y');
-        hold on
-    elseif clusters(ii)==5
-        Snumb(5)=Snumb(5)+1;
-        time_stamps(5,Snumb(5))=time_stamp(ii);
-        spikeTimestampTuple = binTimeStart(1) + [time_stamp(ii), time_stamp(ii)]/desiredSamplingFrequency;
-        
-        plot(spikeTimestampTuple,[-1,1],'p');
-        hold on
-        end
-end
 xlim(tslim);
 ylim([-10,10]);
 title('Colored Raster plot');

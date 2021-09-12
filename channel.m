@@ -3,17 +3,24 @@ classdef channel < handle
         sf
         msPerTs
         nTimestamps
+        startTime
         t
         raw
         filtered
         timestampsPrePeak
         timestampsPostPeak
         spikeTimestamps
+        spikeTimestampsMatrix
         spikeWaveforms
         PCScores
         clusters
+        nClusters
+        nSpikesPerCluster
+        ISI
         thetaWaves
         thetaPhases
+        spikeThetaAngles
+        clusterColors
     end
     
     methods
@@ -23,6 +30,7 @@ classdef channel < handle
             % 1. Convert data into a single 1d array
             % 1.1. calculate time interval of each bin(which contains 256 observations)
             binTimeStart = data(:,5); %assuming that 'time' means starting time.
+            ch.startTime = binTimeStart(1);
             binTimeInterval = diff(binTimeStart);
             binTimeInterval(end + 1) = binTimeInterval(end);
 
@@ -48,6 +56,7 @@ classdef channel < handle
             ch.t = tResampled;
             ch.raw = xResampled;
             ch.nTimestamps = length(tResampled);
+            ch.clusterColors = ["red", "green", "blue", "magenta", "cyan", "yellow"]';
         end
     
         function bandPass(ch, passBand)
@@ -86,22 +95,164 @@ classdef channel < handle
             ch.PCScores = score(:,1:2);
         end
         
-        function getKmeansClusters(ch, clusternum)
+        function getKmeansClusters(ch, clusternum, seednum)
             % apply k-means clustering of waveforms
+            rng(seednum) % For reproducibility
             [clusters, centroid] = kmeans(ch.PCScores, clusternum);
             ch.clusters = clusters
-        end        
+            ch.nClusters = clusternum
 
+            %count spikes in each cluster
+            ch.nSpikesPerCluster= zeros([ch.nClusters,1])
+            for ii = 1 : length(ch.clusters)
+                for c = 1 : ch.nClusters
+                    if ch.clusters(ii) == c
+                        ch.nSpikesPerCluster(c) = ch.nSpikesPerCluster(c) + 1;
+                        ch.spikeTimestampsMatrix(c, ch.nSpikesPerCluster(c)) = ch.spikeTimestamps(ii);
+                    end
+                end
+            end         
+        end % getKmeansClusters
         function getThetas(ch)
             %apply 4-8 Hz frequency band
             ch.thetaWaves = bandpass(ch.raw, [4, 8], ch.sf);
             
             %phase caculation through Hilbert transform
             xHilbert = hilbert(ch.thetaWaves);
-            ch.thetaPhases = angle(xHilbert);       
+            ch.thetaPhases = angle(xHilbert);    
+            
+            %theta angles at spikes
+            ch.spikeThetaAngles = ch.thetaPhases(ch.spikeTimestamps)
+            
         end
+        
+        function uniformTest(ch)
+            pvals = zeros([ch.nClusters,1]);
+            for c = 1 : ch.nClusters
+                angles = ch.spikeThetaAngles(ch.clusters == c);
+                [pval, z] = circ_rtest(angles);
+                pvals(c) = pval;
+            end
+            pvals
+        end
+    % drawing functions
+        function drawPCA(ch)
+            gscatter(ch.PCScores(:,1),ch.PCScores(:,2),ch.clusterColors(ch.clusters))
+            xlabel('First PC');
+            ylabel('Second PC');
+            title('Principal Component Scatter Plot with Colored Clusters');    
+        end
+
+        function drawClusterMeanSpikes(ch)
+            %for each cluster, the average waveform, and the average waveform +/- 1 S.D.;
+            x = (-ch.timestampsPrePeak : ch.timestampsPostPeak) * ch.msPerTs;
+            x2 = [x, fliplr(x)];
+            for c = 1:ch.nClusters
+                nSpikesNow = sum(ch.clusters == c);
+                spikesNow = ch.spikeWaveforms((ch.clusters == c),:);
+                stdSpikes = std(ch.spikeWaveforms((ch.clusters == c),:));
+                if nSpikesNow > 1
+                    meanSpike = mean(spikesNow);
+                else
+                    meanSpike = spikesNow;
+                end
+
+                curve1 = meanSpike - stdSpikes;
+                curve2 = meanSpike + stdSpikes;
                 
+                subplot(ch.nClusters, 1, c);
+                plot(x, curve1, 'k--', 'LineWidth', 1, 'Color', ch.clusterColors(c));
+                hold on;
+                plot(x, curve2, 'k--', 'LineWidth', 1, 'Color', ch.clusterColors(c));
+                hold on;
                 
+                %inBetween = [curve1, fliplr(curve2)];
+                %fill(x2, inBetween, ch.clusterColors(c));
                 
+    
+                axis tight   
+                title('Mean spike(+-std) for group ' + string(c) + ', n = ' + string(nSpikesNow) );
+                % add mean spike
+                plot(x, meanSpike,'Linewidth',2,'Color','k');
+                
+                %min dVdt
+                min(diff(mean(ch.spikeWaveforms((ch.clusters == c),:)))*30);
+            end
+            %suptitle('Clustering of Profiles');
+        end % method drawClusterMeanSpikes
+
+        function drawRaster(ch)
+            for ii = 1:length(ch.spikeTimestamps)
+                spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
+                plot(spikeTimestampTuple, [-1,1], 'k');
+                hold on
+            end
+            hold off
+            ylim([-10,10]);
+            title('Raster plot');
+            xlabel('time(s)');
+            ylabel('Raster');
+        end %drawRaster
+        
+        function drawColoredRaster(ch)
+            %% Colored raster plot
+            
+            
+            for ii = 1 : length(ch.clusters)
+                if ch.clusters(ii) == 1
+                    spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
+                    plot(spikeTimestampTuple,[-1,1], ch.clusterColors(ch.clusters(ii)));
+                    hold on
+                elseif ch.clusters(ii) == 2
+                    spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
+                    plot(spikeTimestampTuple,[-1,1], ch.clusterColors(ch.clusters(ii)));
+                    hold on
+                elseif ch.clusters(ii) == 3
+                    spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
+                    plot(spikeTimestampTuple,[-1,1], ch.clusterColors(ch.clusters(ii)));
+                    hold on
+                elseif ch.clusters(ii) == 4
+                    spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
+                    plot(spikeTimestampTuple,[-1,1], ch.clusterColors(ch.clusters(ii)));
+                    hold on
+                elseif ch.clusters(ii) == 5
+                    spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
+                    plot(spikeTimestampTuple,[-1,1], ch.clusterColors(ch.clusters(ii)));
+                    hold on
+                end
+            end
+        end % drawColoredRaster
+
+        function drawISI(ch)
+
+            %calculate ISI 
+            for c = 1 : ch.nClusters
+                for j = 2 : ch.nSpikesPerCluster(c)
+                    if ch.spikeTimestampsMatrix(c, j) > 0
+                        ch.ISI(c,j) = ch.spikeTimestampsMatrix(c, j) - ch.spikeTimestampsMatrix(c, j - 1);
+                    end  
+                end
+            end
+            
+            ch.ISI(:, 1) = [];
+            %draw ISI histograms
+            for c = 1 : ch.nClusters 
+                subplot(1, ch.nClusters, c);
+                h = histogram(ch.ISI(c, 1 : ch.nSpikesPerCluster(c) - 1) * ch.msPerTs, 100);
+                h.FaceColor = ch.clusterColors(c)
+                title('ISI histom');
+                xlabel('ISI (ms)');
+                hold on
+            end
+        end %drawISI
+
+        function drawCircularTheta(ch)
+            for c = 1 : ch.nClusters
+                angles = ch.spikeThetaAngles(ch.clusters == c);
+                subplot(1, ch.nClusters, c);
+                circ_plot(angles,'hist',[],20,true,false,'linewidth',2,'color',ch.clusterColors(c));
+            end
+        end % drawCircularTheta
+
     end %methods
 end %class
