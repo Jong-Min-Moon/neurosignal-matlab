@@ -56,7 +56,7 @@ classdef channel < handle
             %3. initialize properties
             ch.organoidNum = organoidNum;
             ch.channelNum = channelNum;
-            ch.month = month
+            ch.month = month;
             ch.sf = desiredSamplingFrequency;
             ch.msPerTs = msPerTimestamp;
             ch.t = tResampled;
@@ -103,13 +103,13 @@ classdef channel < handle
         
         function getKmeansClusters(ch, clusternum, seednum)
             % apply k-means clustering of waveforms
-            rng(seednum) % For reproducibility
+            rng(seednum); % For reproducibility
             [clusters, centroid] = kmeans(ch.PCScores, clusternum);
-            ch.clusters = clusters
-            ch.nClusters = clusternum
+            ch.clusters = clusters;
+            ch.nClusters = clusternum;
 
             %count spikes in each cluster
-            ch.nSpikesPerCluster= zeros([ch.nClusters,1])
+            ch.nSpikesPerCluster = zeros([ch.nClusters,1]);
             for ii = 1 : length(ch.clusters)
                 for c = 1 : ch.nClusters
                     if ch.clusters(ii) == c
@@ -128,7 +128,7 @@ classdef channel < handle
             ch.thetaPhases = angle(xHilbert);    
             
             %theta angles at spikes
-            ch.spikeThetaAngles = ch.thetaPhases(ch.spikeTimestamps)
+            ch.spikeThetaAngles = ch.thetaPhases(ch.spikeTimestamps);
             
         end
         
@@ -141,19 +141,87 @@ classdef channel < handle
             end
             pvals
         end
+
+
     % drawing functions
+        function p = drawRaw(ch, color)
+            p = plot(ch.t, ch.raw);
+            p.Color = color;
+        end
+
+        function drawMeanSpike(ch, color)
+            %for each cluster, the average waveform, and the average waveform +/- 1 S.D.;
+            x = (-ch.timestampsPrePeak : ch.timestampsPostPeak) * ch.msPerTs;
+            x2 = [x, fliplr(x)];
+            
+            spikesNow = ch.spikeWaveforms;
+            nSpikesNow = size(spikesNow,1);
+            stdSpikes = std(spikesNow);
+            if nSpikesNow > 1
+                meanSpike = mean(spikesNow);
+            else
+                meanSpike = spikesNow;
+            end
+            
+            curve1 = meanSpike - stdSpikes;
+            curve2 = meanSpike + stdSpikes;
+                 
+            plot(x, curve1, 'k--', 'LineWidth', 1, 'Color', color);
+            hold on;
+            plot(x, curve2, 'k--', 'LineWidth', 1, 'Color', color);
+            hold on;
+                 
+            %inBetween = [curve1, fliplr(curve2)];
+            %fill(x2, inBetween, 'r');
+                 
+     
+            axis tight   
+            title('Mean spike(+-std), n = ' + string(nSpikesNow) );
+            plot(x, meanSpike,'Linewidth',2,'Color','k');% add mean spike
+        end % method drawMeanSpike      
+        
         function drawPCA(ch)
-            gscatter(ch.PCScores(:,1),ch.PCScores(:,2),ch.clusterColors(ch.clusters))
+            
+            PC1 = ch.PCScores(:,1);
+            PC2 = ch.PCScores(:,2);
+            for c = 1 : ch.nClusters
+                scatter(PC1((ch.clusters == c),:), PC2((ch.clusters == c),:) ,ch.clusterColors(c), 'filled')
+                hold on;
+                
+            end
+            legend(["cluster 1", "cluster 2", "cluster 3"])
+   
             xlabel('First PC');
             ylabel('Second PC');
             title('Principal Component Scatter Plot with Colored Clusters');    
+            legend("cluster " + string(1 : ch.nClusters));
         end
 
         function drawClusterMeanSpikes(ch)
             %for each cluster, the average waveform, and the average waveform +/- 1 S.D.;
             x = (-ch.timestampsPrePeak : ch.timestampsPostPeak) * ch.msPerTs;
             x2 = [x, fliplr(x)];
-            for c = 1:ch.nClusters
+
+            %get meanSpikes
+            meanSpikes = [];
+            for ii = 1 : ch.nClusters
+                nSpikesNow = sum(ch.clusters == ii);
+                spikesNow = ch.spikeWaveforms((ch.clusters == ii),:);
+                stdSpikes = std(ch.spikeWaveforms((ch.clusters == ii),:));
+                if nSpikesNow > 1
+                    meanSpike = mean(spikesNow);
+                else
+                    meanSpike = spikesNow;
+                meanSpikes = [meanSpikes; meanSpike];
+                end
+            end
+            %get ylim
+            maxes = max(meanSpikes');
+            mins = min(meanSpikes');
+            ylimForAll = [min(mins)*2, max(maxes)*2];
+            
+            
+            for c = 1 : ch.nClusters
                 nSpikesNow = sum(ch.clusters == c);
                 spikesNow = ch.spikeWaveforms((ch.clusters == c),:);
                 stdSpikes = std(ch.spikeWaveforms((ch.clusters == c),:));
@@ -180,28 +248,27 @@ classdef channel < handle
                 title('Mean spike(+-std) for group ' + string(c) + ', n = ' + string(nSpikesNow) );
                 % add mean spike
                 plot(x, meanSpike,'Linewidth',2,'Color','k');
-                
-                %min dVdt
-                min(diff(mean(ch.spikeWaveforms((ch.clusters == c),:)))*30);
+                ylim(ylimForAll);
             end
-            %suptitle('Clustering of Profiles');
+            hold off;
         end % method drawClusterMeanSpikes
 
-        function drawRaster(ch)
+        function drawRaster(ch, color)
             for ii = 1:length(ch.spikeTimestamps)
                 spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
-                plot(spikeTimestampTuple, [-1,1], 'k');
+                p = plot(spikeTimestampTuple, [-1,1], 'k');
+                p.Color = color;
                 hold on
             end
             hold off
-            ylim([-10,10]);
+            ylim([-2, 2]);
             title('Raster plot');
             xlabel('time(s)');
             ylabel('Raster');
         end %drawRaster
         
         function drawColoredRaster(ch)
-            %% Colored raster plot
+            % Colored raster plot
             
             
             for ii = 1 : length(ch.clusters)
@@ -227,6 +294,7 @@ classdef channel < handle
                     hold on
                 end
             end
+            ylim([-2,2]);
         end % drawColoredRaster
 
         function drawISI(ch)
@@ -243,10 +311,11 @@ classdef channel < handle
             ch.ISI(:, 1) = [];
             %draw ISI histograms
             for c = 1 : ch.nClusters 
+                nSpikesNow = sum(ch.clusters == c);
                 subplot(1, ch.nClusters, c);
                 h = histogram(ch.ISI(c, 1 : ch.nSpikesPerCluster(c) - 1) * ch.msPerTs, 100);
-                h.FaceColor = ch.clusterColors(c)
-                title('ISI histom');
+                h.FaceColor = ch.clusterColors(c);
+                title('group ' + string(c) + ', n = ' + string(nSpikesNow) );
                 xlabel('ISI (ms)');
                 hold on
             end
@@ -259,6 +328,22 @@ classdef channel < handle
                 circ_plot(angles,'hist',[],20,true,false,'linewidth',2,'color',ch.clusterColors(c));
             end
         end % drawCircularTheta
+
+        function drawPhaseSpace(ch, color)
+            averageWaveform = mean(ch.spikeWaveforms);
+            dVdt = diff(averageWaveform)/ch.msPerTs;
+            averageWaveform = averageWaveform - min(averageWaveform);     
+            dVdt = dVdt - mean(dVdt);
+
+            %draw
+            V = averageWaveform(1:(end-1))
+            hold on
+            for i = 1: (length(dVdt)-1)
+                p = plot([V(i), V(i+1)], [dVdt(i), dVdt(i+1)], 'k');
+                p.Color = color;
+            end
+            hold off
+        end %drawPhaseSpace
 
     end %methods
 end %class

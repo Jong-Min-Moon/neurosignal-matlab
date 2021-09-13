@@ -17,7 +17,8 @@ classdef longtermAnalyzer < handle
             LA.channels(index).channelNum = ch.channelNum;
             LA.channels(index).month = ch.month;
             LA.channels(index).channel = ch;
-            
+            LA.channels(index).msPerTs = ch.msPerTs;
+
             %calculate FWHm
             spikes = ch.spikeWaveforms;
             nSpikes = size(spikes, 1);
@@ -102,5 +103,27 @@ classdef longtermAnalyzer < handle
             end
             hold off
         end %drawHistByMonth
+
+        function drawPhaseSpace(LA, channelNum, month)
+            elems = LA.channels(([LA.channels.channelNum] == channelNum) & ([LA.channels.month] == month));
+            waveformsConcat = []; % storage
+            msPerTs = mean([elems.msPerTs])
+            %for each organoid
+            for elem = elems
+                waveformsConcat = [waveformsConcat; elem.channel.spikeWaveforms];
+            end
+            averageWaveform = mean(waveformsConcat);
+            dVdt = diff(averageWaveform)/msPerTs;
+            averageWaveform = averageWaveform - min(averageWaveform);     
+            dVdt = dVdt - mean(dVdt)
+
+            %draw
+            V = averageWaveform(1:(end-1))
+            hold on
+            for i = 1: (length(dVdt)-1)
+                plot([V(i), V(i+1)], [dVdt(i), dVdt(i+1)], 'k');
+            end
+            hold off
+        end %drawPhaseSpace
     end %methods
 end %classdef

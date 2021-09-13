@@ -1,3 +1,25 @@
+
+%% Figure 4.b.
+
+                             %organoid, channel, month     
+o1_ch1_m1 = channel("rawData.csv", 1, 1, 1);
+o1_ch2_m1 = channel("rawData.csv", 1, 2, 1);
+o1_ch1_m2 = channel("rawData.csv", 1, 1, 2);
+o1_ch2_m2 = channel("rawData.csv", 1, 2, 2);
+
+%%
+
+o1_ch1_m1.bandPass([100,3000])
+o1_ch2_m1.bandPass([100,3000])
+o1_ch1_m2.bandPass([100,3000])
+o1_ch2_m2.bandPass([100,3000])
+
+o1_ch1_m1.detectSpikes(3,2,2)
+o1_ch2_m1.detectSpikes(3,2,2)
+o1_ch1_m2.detectSpikes(3,2,2)
+o1_ch2_m2.detectSpikes(3,2,2)
+
+%%
 la = longtermAnalyzer()
 %organ, ch, month
 ch111 = channel("ch6.csv", 1, 1, 1)
@@ -31,4 +53,4 @@ la.addChannel(ch222)
 la.addChannel(ch311)
 la.addChannel(ch322)
 
-la.drawHistByMonth(1)
+la.drawPhaseSpace(1,1)
