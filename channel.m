@@ -1,5 +1,8 @@
 classdef channel < handle
     properties
+        organoidNum
+        channelNum
+        month
         sf
         msPerTs
         nTimestamps
@@ -24,7 +27,7 @@ classdef channel < handle
     end
     
     methods
-        function ch = channel(filename)
+        function ch = channel(filename, organoidNum, channelNum, month)
             data = readmatrix(filename);
             
             % 1. Convert data into a single 1d array
@@ -51,6 +54,9 @@ classdef channel < handle
             [xResampled, tResampled] = resample(x, t, desiredSamplingFrequency, 'spline');
         
             %3. initialize properties
+            ch.organoidNum = organoidNum;
+            ch.channelNum = channelNum;
+            ch.month = month
             ch.sf = desiredSamplingFrequency;
             ch.msPerTs = msPerTimestamp;
             ch.t = tResampled;
