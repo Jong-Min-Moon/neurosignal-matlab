@@ -35,7 +35,8 @@ classdef longtermAnalyzer < handle
             halfMin = min(spikeWaveform) / 2;
             index1 = find(spikeWaveform <= halfMin, 1, 'first');
             index2 = find(spikeWaveform <= halfMin, 1, 'last');
-            FWHm = (index2 - index1 + 1) * msPerTs; % FWHm in milisecond
+            indexDiff = (index2 - index1 + 1);
+            FWHm = indexDiff * msPerTs; % FWHm in milisecond
         end % getFWHm  
         
         function drawFWHmHistByMonth(LA, channelNum)
@@ -103,6 +104,7 @@ classdef longtermAnalyzer < handle
                 scatter(x, y, [], colors, 'filled');
             end
             hold off
+            ylabel("FWHm(ms)")
         end %drawHistByMonth
 
         function drawPhaseSpace(LA, channelNum, month)

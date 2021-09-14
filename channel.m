@@ -101,7 +101,8 @@ classdef channel < handle
             % from CyborgBrainOrg.m
 
             % apply PCA to waveforms and pick first two PC scores
-            waveformZ = zscore(ch.spikeWaveforms); %standardize
+            waveformZ = zscore(ch.spikeWaveforms); %standard scaling
+            
             [coeff,score,latent,tsquared,explained] = pca(waveformZ);
             ch.PCScores = score(:,1:2);
             ch.explainedVar = explained;
@@ -336,7 +337,7 @@ classdef channel < handle
                 subplot(1, ch.nClusters, c);
                 h = histogram(ch.ISI(c, 1 : ch.nSpikesPerCluster(c) - 1) * ch.msPerTs, 100);
                 h.FaceColor = ch.clusterColors(c);
-                title('group ' + string(c) + ', n = ' + string(nSpikesNow) );
+                title('cluster ' + string(c) + ', n = ' + string(nSpikesNow) );
                 xlabel('ISI (ms)');
                 hold on
             end
