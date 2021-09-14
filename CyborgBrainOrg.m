@@ -10,7 +10,7 @@
 
 data = readmatrix("raw data.csv");
 
-%% Convert data into a single 1d array
+%% Convert data into a single 1d array(*)
 
 % calculate time interval of each bin(which contains 256 observations)
 binTimeStart = data(:,5); %assuming that 'time' means starting time.
@@ -32,7 +32,7 @@ t = t(:);
 
 
 
-%% resample the signal using spline, to make uniform time interval
+%% resample the signal using spline, to make uniform time interval(*)
 msPerTimestamp = mean(binTimeInterval) * (1000/256) % milisecond per timestamp. stamp->ms conversion.
 desiredSamplingFrequency = 1000 * (1/msPerTimestamp) %approx. 3000hz. 1/10 of reference code 30000hz
 [yResampled, tResampled] = resample(y, t, desiredSamplingFrequency, 'spline');
@@ -48,12 +48,12 @@ legend('Original', 'Resampled using spline')
 tslim = [min(tResampled), max(tResampled)+1] %xlim for time in second, for later use
 tmslim = 1000 * [min(tResampled), max(tResampled)+1] %xlim for time in milisecond, for later use
 
-%% Set passband frequency for bandpass filtering
+%% Set passband frequency for bandpass filtering(*)
 %try several [low, high] Hz passband frequency, using the information from the plot 
 passbandFrequency = [200,1000] % parameter to set.
 bandpass(yResampled, passbandFrequency, desiredSamplingFrequency)
 
-%% Apply bandpass filter and compare with the original signal
+%% Apply bandpass filter and compare with the original signal(*)
 passbandFrequency = [200, 1000]
 yFiltered = bandpass(yResampled, passbandFrequency, desiredSamplingFrequency);
 

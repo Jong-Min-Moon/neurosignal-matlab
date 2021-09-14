@@ -4,7 +4,7 @@
 % circular statistics (for phase analysis)
 
 
-%% Read data
+%%Read data
 fileNames = ["ch6", "ch8", "ch9"];
 for i = 1:length(fileNames)
     fileName = fileNames(i) + ".csv";
@@ -13,7 +13,7 @@ for i = 1:length(fileNames)
     raw(i).t = t;
     raw(i).x = x;
     raw(i).msPerTs = msPerTimestamp;
-    raw(i).sf = desiredSamplingFrequency;           
+    raw(i ).sf = desiredSamplingFrequency;           
 end
 
 rawLimMax = max(max([raw.x]));
@@ -79,32 +79,4 @@ xlabel('time(s)');
 ylabel('Raster');
 
 %% Additional analysis for each cluster
-figure 
-for c = 1:clusternum
-    subplot(2,clusternum,c);
-        %Half-width
-        findpeaks(-mean(waveform((clusters == c),:)),(-timestampsPrePeak:timestampsPostPeak)*msPerTimestamp,'Annotate','extents','WidthReference','halfheight');
-        title('Signal Peak Widths')
-        hold on
-        curve1=mean(waveform((clusters == c),:))-std(waveform((clusters == c),:));
-        curve2=mean(waveform((clusters == c),:))+std(waveform((clusters == c),:));
-        findpeaks(-curve1,(-timestampsPrePeak:timestampsPostPeak)*msPerTimestamp,'Annotate','extents','WidthReference','halfheight');
-        hold on
-        findpeaks(-curve2,(-timestampsPrePeak:timestampsPostPeak)*msPerTimestamp,'Annotate','extents','WidthReference','halfheight');
-        legend('off');
-        hold on
-        %ISI calculation
-            for j=2:Snumb(c)
-                if time_stamps(c,j)>0
-                    ISI(c,j)=time_stamps(c,j)-time_stamps(c,j-1);
-                end  
-            end
-end
-ISI(:,1)=[];
-for c = 1:clusternum  %ISI histograms
-    subplot(2,clusternum,c+clusternum);
-    histogram(ISI(c,1:Snumb(c)-1)/30,100);
-    title('ISI histogram');
-    xlabel('ISI (ms)');
-    hold on
-end
+

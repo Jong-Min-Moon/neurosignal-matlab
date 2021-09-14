@@ -104,7 +104,7 @@ classdef channel < handle
             waveformZ = zscore(ch.spikeWaveforms); %standardize
             [coeff,score,latent,tsquared,explained] = pca(waveformZ);
             ch.PCScores = score(:,1:2);
-            ch.explainedVar = explained;
+            ch.explainedVar = explained
         end
         
         function getKmeansClusters(ch, clusternum, seednum)
@@ -195,10 +195,9 @@ classdef channel < handle
             % from CyborgBrainOrg.m
 
             subplot(2,1,1)
-            bar(ch.explainedVar);
-            title("Explained variance by principal component");
+            bar(ch.explainedVar)
+            title("")
             
-            subplot(2,1,2)
             PC1 = ch.PCScores(:,1);
             PC2 = ch.PCScores(:,2);
             for c = 1 : ch.nClusters
