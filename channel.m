@@ -268,7 +268,7 @@ classdef channel < handle
                 title('Mean spike(+-std) for group ' + string(c) + ', n = ' + string(nSpikesNow) );
                 % add mean spike
                 plot(x, meanSpike,'Linewidth',2,'Color','k');
-                ylim(ylimForAll);
+                ylim(ylimForAll);%3개 클러스터의 축 통일
             end
             hold off;
         end % method drawClusterMeanSpikes
