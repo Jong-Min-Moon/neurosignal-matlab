@@ -1,0 +1,20 @@
+
+classdef channelsFromMultichannel < handle
+    methods
+        function chmc = 
+    
+
+
+function channelObject = channelFromMultiChannel(filename, organoidNum, channelNum, month)
+%1_singleunit wave.xlsx파일과 똑같은 포맷을 가정
+%데이터가 7번째 줄부터 시작하므로, 위에서부터 6줄은 버리고 데이터 로드 
+data = readmatrix(filename, NumHeaderLines = 6);
+
+%파일에 있는 채널 목록을 확인 
+channelRows = data(:,1); 
+channelBoolean = channelRows == channelNum;
+channelData = data(channelBoolean,:);
+
+binTimeStart = channelData(:,3);
+x = channelData(:, 4:end);
+channelObject = channel_from_data(binTimeStart, x, organoidNum, channelNum, month)
