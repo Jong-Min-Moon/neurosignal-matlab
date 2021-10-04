@@ -1,35 +1,43 @@
 classdef longtermAnalyzer < handle
     properties
-        channels
-        nChannels
+        channelObjects
+        nChannelObjects
     end
 
     methods
         function LA = longtermAnalyzer()
-            LA.channels = struct;
-            LA.nChannels = 0;
+            LA.channelObjects = struct;
+            LA.nChannelObjects = 0;
         end
 
         function addChannel(LA, ch)
-            index = LA.nChannels + 1;
+            %LA.nChannelObjects index 0에서 시작 
+            LA.nChannelObjects = LA.nChannelObjects + 1; %channel object 하나 추가할 때마다 index를 하나씩 늘림
+            index = LA.nChannelObjects; 
             
-            LA.channels(index).organoidNum = ch.organoidNum;
-            LA.channels(index).channelNum = ch.channelNum;
-            LA.channels(index).month = ch.month;
-            LA.channels(index).channel = ch;
-            LA.channels(index).msPerTs = ch.msPerTs;
+            %channelObjects 구조체에 정보 저장
+            LA.channelObjects(index).organoidNum = ch.organoidNum;
+            LA.channelObjects(index).channelNum = ch.channelNum;
+            LA.channelObjects(index).month = ch.month;
+            LA.channelObjects(index).channel = ch;
+            LA.channelObjects(index).msPerTs = ch.msPerTs;
 
             %calculate FWHm
+            LA.getFWHmsForChannel(ch, index);
+            
+            
+        end %addChannel
+        
+        function FWHms = getFWHmsForChannel(LA, ch, index)
             spikes = ch.spikeWaveforms;
             nSpikes = size(spikes, 1);
             FWHms = zeros([nSpikes, 1]); %column vectors
             for i = 1 : nSpikes
                 FWHms(i) = LA.getFWHm(spikes(i, :), ch.msPerTs);
             end
-            LA.channels(index).FWHms = FWHms;
-            LA.nChannels = LA.nChannels + 1;
-        end %addChannel
-
+            LA.channelObjects(index).FWHms = FWHms; 
+        end %end of getFWHmsForChannel
+        
         function FWHm = getFWHm(LA, spikeWaveform, msPerTs)
             %full width at half minimum
             halfMin = min(spikeWaveform) / 2;
@@ -37,10 +45,11 @@ classdef longtermAnalyzer < handle
             index2 = find(spikeWaveform <= halfMin, 1, 'last');
             indexDiff = (index2 - index1 + 1);
             FWHm = indexDiff * msPerTs; % FWHm in milisecond
-        end % getFWHm  
+        end % end of getFWHm  
+        
         
         function drawFWHmHistByMonth(LA, channelNum)
-            channelsOfThisChannelNum = LA.channels([LA.channels.channelNum] == channelNum);
+            channelsOfThisChannelNum = LA.channelObjects([LA.channelObjects.channelNum] == channelNum);
             maxMonth = max([channelsOfThisChannelNum.month]);
             minMonth = min([channelsOfThisChannelNum.month]);
 
@@ -108,7 +117,7 @@ classdef longtermAnalyzer < handle
         end %drawHistByMonth
 
         function drawPhaseSpace(LA, channelNum, month)
-            elems = LA.channels(([LA.channels.channelNum] == channelNum) & ([LA.channels.month] == month));
+            elems = LA.channelObjects(([LA.channelObjects.channelNum] == channelNum) & ([LA.channelObjects.month] == month));
             waveformsConcat = []; % storage
             msPerTs = mean([elems.msPerTs])
             %for each organoid
@@ -130,7 +139,7 @@ classdef longtermAnalyzer < handle
         end %drawPhaseSpace
         
         function aggregateByMonth(LA, channelNum, month)
-            elems = LA.channels(([LA.channels.channelNum] == channelNum) & ([LA.channels.month] == month));
+            elems = LA.channelObjects(([LA.channelObjects.channelNum] == channelNum) & ([LA.channelObjects.month] == month));
             waveformsConcat = []; % storage
             msPerTs = mean([elems.msPerTs])
             %for each organoid

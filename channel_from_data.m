@@ -216,29 +216,34 @@ classdef channel_from_data < handle
             ylabel('Raster');
         end %drawRaster
         
-        function drawColoredRaster(ch)
+        function drawColoredRaster(ch, clusterColors)
             % from CyborgBrainOrg.m
                         
             for ii = 1 : length(ch.clusters)
                 if ch.clusters(ii) == 1
+                    clusterNum = ch.clusters(ii);
                     spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
-                    plot(spikeTimestampTuple,[-1,1], ch.clusterColors(ch.clusters(ii)));
+                    plot(spikeTimestampTuple,[-1,1], clusterColors(clusterNum));
                     hold on
                 elseif ch.clusters(ii) == 2
+                    clusterNum = ch.clusters(ii);
                     spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
-                    plot(spikeTimestampTuple,[-1,1], ch.clusterColors(ch.clusters(ii)));
+                    plot(spikeTimestampTuple,[-1,1], clusterColors(clusterNum));
                     hold on
                 elseif ch.clusters(ii) == 3
+                    clusterNum = ch.clusters(ii);
                     spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
-                    plot(spikeTimestampTuple,[-1,1], ch.clusterColors(ch.clusters(ii)));
+                    plot(spikeTimestampTuple,[-1,1], clusterColors(clusterNum));
                     hold on
                 elseif ch.clusters(ii) == 4
+                    clusterNum = ch.clusters(ii);
                     spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
-                    plot(spikeTimestampTuple,[-1,1], ch.clusterColors(ch.clusters(ii)));
+                    plot(spikeTimestampTuple,[-1,1], clusterColors(clusterNum));
                     hold on
                 elseif ch.clusters(ii) == 5
+                    clusterNum = ch.clusters(ii);
                     spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
-                    plot(spikeTimestampTuple,[-1,1], ch.clusterColors(ch.clusters(ii)));
+                    plot(spikeTimestampTuple,[-1,1], clusterColors(clusterNum));
                     hold on
                 end
             end
