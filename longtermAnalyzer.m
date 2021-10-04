@@ -48,7 +48,30 @@ classdef longtermAnalyzer < handle
         end % end of getFWHm  
         
         
-        function drawFWHmHistByMonth(LA, channelNum)
+        function [FWHmPoints, organoidLabels, meanFWHm] = getFWHmHistByMonth(LA, monthNum, channelNum)
+            
+            %주어진 month와 channel에 해당하는 channel object만 가져오
+            channelsFiltered = LA.channelObjects([LA.channelObjects.channelNum] == channelNum);
+            channelsFiltered = channelsFiltered([channelsFiltered.month] == monthNum);
+            
+            % storage
+            
+            FWHmPoints = []; % save FWHm datapoints for point plot
+            organoidLabels = []; % save labels for point colors
+
+            for ch = channelsFiltered
+                FWHms = ch.FWHms;
+                organoidNum = ch.organoidNum;
+                FWHmPoints = [FWHmPoints; FWHms];
+                organoidLabels = [organoidLabels; repelem(organoidNum, length(FWHms))'];
+            end
+            
+            meanFWHm = mean(FWHmPoints);
+         end
+            
+
+        
+        function drawFWHmHistByMonth_backup(LA, channelNum)
             channelsOfThisChannelNum = LA.channelObjects([LA.channelObjects.channelNum] == channelNum);
             maxMonth = max([channelsOfThisChannelNum.month]);
             minMonth = min([channelsOfThisChannelNum.month]);

@@ -23,6 +23,7 @@ classdef channel_from_data < handle
         nClusters
         nSpikesPerCluster
         
+        totalMeanSpikeStruct
         meanSpikesStruct
         
         ISI
@@ -112,6 +113,7 @@ classdef channel_from_data < handle
             
             ch.nSpikes = length(ch.spikeTimestamps); %발견한 spike 개수 저장 
             fprintf('number of spikes found : %d\n', ch.nSpikes);
+            ch.calculateTotalMeanSpikes(); %mean spike 계산 후 저장
         end %end of detectSpikes
 
         function getPCScores(ch)
@@ -164,13 +166,33 @@ classdef channel_from_data < handle
         end
 
 
-    % drawing functions               
+    % drawing functions  
+        function calculateTotalMeanSpikes(ch)
+            %통합 mean spike
+            tRangeCentered = (-ch.timestampsPrePeak : ch.timestampsPostPeak) * ch.msPerTs; %각 waveform의 t range. spike위치가 0이 되게 centering되어 있고, milisecond 단위로 변환 
+            
+        
+            
+            %meanSpike를 정의 
+            if ch.nSpikes > 1 % 전체 spike 개수가 2개 이상이면 
+                meanSpike = mean(ch.spikeWaveforms); %모든 spike의 waveform을 평균한 것이 meanSpike
+                else %전체 spike 개수가 1개 뿐이면 
+                    meanSpike = ch.spikeWaveforms;% 굳이  mean을 계산할 필요 없이 그 spike가 곧 meanSpike
+                end
+            stdSpikes = std(ch.spikeWaveforms);
+            ch.totalMeanSpikeStruct.nSpikes  = ch.nSpikes; % cluster 내 spike 개수 저장 
+            ch.totalMeanSpikeStruct.meanSpike = meanSpike; % meanSpike waveform 저장 
+            ch.totalMeanSpikeStruct.std = stdSpikes;% standard deviation 저장 
+            ch.totalMeanSpikeStruct.tRangeCentered = tRangeCentered; %waveform의 t range 저장 
+        end %end of calculateTotalMeanSpikes
+        
         function calculateClusterMeanSpikes(ch)
             % from CyborgBrainOrg.m
             % for each cluster, calculate average waveform, and S.D.;
           
             tRangeCentered = (-ch.timestampsPrePeak : ch.timestampsPostPeak) * ch.msPerTs; %각 waveform의 t range. spike위치가 0이 되게 centering되어 있고, milisecond 단위로 변환 
-         
+           
+            
             for c = 1 : ch.nClusters %각 클러스터마다 반복 
                 nSpikesNow = sum(ch.clusters == c);% 클러스터 내 spike 개수 저장 
                 spikesNow = ch.spikeWaveforms((ch.clusters == c),:); %현 cluster 내 spike waveform만 모은 행렬 
@@ -190,6 +212,13 @@ classdef channel_from_data < handle
                 ch.meanSpikesStruct(c).tRangeCentered = tRangeCentered; %waveform의 t range 저장 
             end
         end % end of calculateClusterMeanSpikes
+        
+        function [meanSpikeWaveform, std, tRangeCentered, nSpikes] = getTotalMeanSpike(ch)
+            meanSpikeWaveform = ch.totalMeanSpikeStruct.meanSpike;
+            std = ch.totalMeanSpikeStruct.std;
+            tRangeCentered = ch.totalMeanSpikeStruct.tRangeCentered;
+            nSpikes = ch.totalMeanSpikeStruct.nSpikes;      
+        end %end of getTotalMeanSpike
         
         function [meanSpikeWaveform, std, tRangeCentered, nSpikes] = getClusterMeanSpike(ch, clusterNum)
             meanSpikeWaveform = ch.meanSpikesStruct(clusterNum).meanSpike;
@@ -298,21 +327,6 @@ classdef channel_from_data < handle
         end % end of getThetaPhaseByClusterNum
         
         
-        function drawPhaseSpace(ch, color)%(*)
-            averageWaveform = mean(ch.spikeWaveforms);
-            dVdt = diff(averageWaveform)/ch.msPerTs;
-            averageWaveform = averageWaveform - min(averageWaveform);     
-            dVdt = dVdt - mean(dVdt);
-
-            %draw
-            V = averageWaveform(1:(end-1))
-            hold on
-            for i = 1: (length(dVdt)-1)
-                p = plot([V(i), V(i+1)], [dVdt(i), dVdt(i+1)], 'k');
-                p.Color = color;
-            end
-            hold off
-        end %drawPhaseSpace
 
     end %methods
 end %class
