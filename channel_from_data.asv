@@ -23,11 +23,9 @@ classdef channel_from_data < handle
         nClusters
         nSpikesPerCluster
         ISI
-        ISIStruct
         thetaWaves
         thetaPhases
         spikeThetaAngles
-        phaseStruct
         clusterColors
     end
     
@@ -145,8 +143,7 @@ classdef channel_from_data < handle
             ch.thetaWaves = bandpass(ch.raw, [4, 8], ch.sf); %apply 4-8 Hz frequency band
             xHilbert = hilbert(ch.thetaWaves); % Hilbert transform하여 복소수 형태로 표현 
             ch.thetaPhases = angle(xHilbert); % 실수부와 허수부 사이 각을 계산 
-            ch.spikeThetaAngles = ch.thetaPhases(ch.spikeTimestamps); %spike 발생 시점의 theta angle을 저장
-            ch.saveCircularTheta() %cluster별로 나누어 theta phase 값을 저장
+            ch.spikeThetaAngles = ch.thetaPhases(ch.spikeTimestamps); %spike 발생 시점의 theta angle을 저장 
         end %end of getThetas
         
         function uniformTest(ch)
@@ -341,39 +338,73 @@ classdef channel_from_data < handle
             end
             
             ch.ISI(:, 1) = [];
-            
-            
-            %클러스터별 ISI 값을 구조체(struct)에 저장
-            for c = 1 : ch.nClusters %cluster 1부터 마지막 cluster까지 반복. c가 클러스터 번호
-                ch.ISIStruct(c).values = ch.ISI(c, 1 : ch.nSpikesPerCluster(c) - 1) * ch.msPerTs; %timestamp 단위를 milisecond 단위로 변환 
-                ch.ISIStruct(c).clusterNum = c;%클러스터 번호 저장 
-                ch.ISIStruct(c).nSpikes = ch.nSpikesPerCluster(c);% 클러스터 내 spike 개수 저장
-            end
         end % end of calculateISI
         
-        function [ISIvalues, nSpikes] = getISIvalues(ch, clusterNum)
-            ISIvalues = ch.ISIStruct(clusterNum).values;
-            nSpikes = ch.ISIStruct(clusterNum).nSpikes;  
-        end %end of getISIvalues
-        
-      
-        function saveCircularTheta(ch)%(*)
-            for c = 1 : ch.nClusters
-                ch.phaseStruct(c).values = ch.spikeThetaAngles(ch.clusters == c); %timestamp 단위를 milisecond 단위로 변환 
-                ch.phaseStruct(c).clusterNum = c;%클러스터 번호 저장 
-                ch.phaseStruct(c).nSpikes = ch.nSpikesPerCluster(c);% 클러스터 내 spike 개수 저장
- 
+        function getISIvalues(ch)
+            for c = 1 : ch.nClusters %cluster 1부터 마지막 cluster까지 반복. c가 클러스터 번호
+                ISIstruct(c).values = ch.ISI(c, 1 : ch.nSpikesPerCluster(c) - 1) * ch.msPerTs
+                ISIstruct(c).clsuterNumn = c
+                ISIstruct(c).nSpikes = 
+                
+                
+             
             end
-        end % saveCircularTheta
+            hold off
+        end %end of drawISI
         
+        function drawISI_backup(ch)
+            % from CyborgBrainOrg.m
 
-        function [phaseValues, nSpikes] = getThetaPhaseByClusterNum(ch, clusterNum)%(*)
-            %주어진 clusterNum에 해당하는 클러스터의 theta phase 값을 가져오는 함수. 히스토그램 그릴 때
-            %쓰는 데이터를 얻기 위해 사용
-           phaseValues = ch.phaseStruct(clusterNum).values;
-           nSpikes = ch.phaseStruct(clusterNum).nSpikes;
-        end % end of getThetaPhaseByClusterNum
+            %calculate ISI
+            for c = 1 : ch.nClusters
+                for j = 2 : ch.nSpikesPerCluster(c)
+                    if ch.spikeTimestampsMatrix(c, j) > 0
+                        ch.ISI(c,j) = ch.spikeTimestampsMatrix(c, j) - ch.spikeTimestampsMatrix(c, j - 1);
+                    end  
+                end
+            end
+            
+            ch.ISI(:, 1) = [];
+            
+            % draw ISI histograms
+            for c = 1 : ch.nClusters %cluster 1부터 마지막 cluster까지 반복. c가 클러스터 번호
+                nSpikesNow = sum(ch.clusters == c);% cluster 내 spike 개수
+                subplot(1, ch.nClusters, c); 
+                ch.ISI(c, 1 : ch.nSpikesPerCluster(c) - 1) * ch.msPerTs
+                % h = histogram(ch.ISI(c, 1 : ch.nSpikesPerCluster(c) - 1) * ch.msPerTs, 100);
+                h.FaceColor = ch.clusterColors(c);
+                
+                
+                title('cluster ' + string(c) + ', n = ' + string(nSpikesNow) ); %subplot 제목 
+                xlabel('ISI (ms)'); % subplot x축 변수 이름 
+                hold on
+            end
+            hold off
+        end %end of drawISI
+
         
+        function drawCircularTheta(ch)%(*)
+            for c = 1 : ch.nClusters
+                nSpikesNow = sum(ch.clusters == c);
+                angles = ch.spikeThetaAngles(ch.clusters == c);
+                subplot(1, ch.nClusters, c);
+                circ_plot(angles,'hist',[],20,true,false,'linewidth',2,'color',ch.clusterColors(c));
+                title('cluster ' + string(c) + ', n = ' + string(nSpikesNow) );
+            end
+        end % drawCircularTheta
+
+        function drawThetaHist(ch)%(*)
+            for c = 1 : ch.nClusters
+                nSpikesNow = sum(ch.clusters == c);
+                angles = ch.spikeThetaAngles(ch.clusters == c);
+                subplot(1, ch.nClusters, c);
+                h = histogram(angles,10);
+                h.FaceColor = ch.clusterColors(c);
+                xlim([-1.5 * 3.15,1.5*3.15]);
+                
+                title('cluster ' + string(c) + ', n = ' + string(nSpikesNow) );
+            end
+        end % drawCircularTheta
         
         function drawPhaseSpace(ch, color)%(*)
             averageWaveform = mean(ch.spikeWaveforms);
