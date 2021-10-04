@@ -22,6 +22,9 @@ classdef channel_from_data < handle
         clusters
         nClusters
         nSpikesPerCluster
+        
+        meanSpikesStruct
+        
         ISI
         ISIStruct
         thetaWaves
@@ -138,6 +141,7 @@ classdef channel_from_data < handle
                     end
                 end
             end
+            ch.calculateClusterMeanSpikes() %클러스터별로 meanSpike, S.D. 계산
             ch.calculateISI() %클러스터별로 InterSpike Intervals 계산
         end % end of getKmeansClusters
         
@@ -160,45 +164,7 @@ classdef channel_from_data < handle
         end
 
 
-    % drawing functions
-        function p = drawRaw(ch, color)
-            p = plot(ch.t, ch.raw);
-            p.Color = color;
-        end
-
-        function drawMeanSpike(ch, color)
-            % from CyborgBrainOrg.m
-
-            %for each cluster, the average waveform, and the average waveform +/- 1 S.D.;
-            x = (-ch.timestampsPrePeak : ch.timestampsPostPeak) * ch.msPerTs;
-            x2 = [x, fliplr(x)];
-            
-            spikesNow = ch.spikeWaveforms;
-            nSpikesNow = size(spikesNow,1);
-            stdSpikes = std(spikesNow);
-            if nSpikesNow > 1
-                meanSpike = mean(spikesNow);
-            else
-                meanSpike = spikesNow;
-            end
-            
-            curve1 = meanSpike - stdSpikes;
-            curve2 = meanSpike + stdSpikes;
-                 
-            plot(x, curve1, 'k--', 'LineWidth', 1, 'Color', color);
-            hold on;
-            plot(x, curve2, 'k--', 'LineWidth', 1, 'Color', color);
-            hold on;
-                 
-            %inBetween = [curve1, fliplr(curve2)];
-            %fill(x2, inBetween, 'r');
-                 
-     
-            axis tight   
-            title('Mean spike(+-std), n = ' + string(nSpikesNow) );
-            plot(x, meanSpike,'Linewidth',2,'Color','k');% add mean spike
-        end % method drawMeanSpike      
-        
+    % drawing functions       
         function drawPCA(ch)
             % from CyborgBrainOrg.m
 
@@ -221,66 +187,41 @@ classdef channel_from_data < handle
             title('Principal Component Scatter Plot with Colored Clusters');    
             legend("cluster " + string(1 : ch.nClusters));
         end
-
-        function drawClusterMeanSpikes(ch)
+        
+        function calculateClusterMeanSpikes(ch)
             % from CyborgBrainOrg.m
-
-            %for each cluster, the average waveform, and the average waveform +/- 1 S.D.;
-            x = (-ch.timestampsPrePeak : ch.timestampsPostPeak) * ch.msPerTs;
-            x2 = [x, fliplr(x)];
-
-            %get meanSpikes
-            meanSpikes = [];
-            for ii = 1 : ch.nClusters
-                nSpikesNow = sum(ch.clusters == ii);
-                spikesNow = ch.spikeWaveforms((ch.clusters == ii),:);
-                stdSpikes = std(ch.spikeWaveforms((ch.clusters == ii),:));
-                if nSpikesNow > 1
-                    meanSpike = mean(spikesNow);
-                else
-                    meanSpike = spikesNow;
-                end
-                meanSpikes = [meanSpikes; meanSpike];
-            end
-           
-            %get ylim            
-            
-            maxes = max(meanSpikes');
-            mins = min(meanSpikes');
-            ylimForAll = [min(mins)*2, max(maxes)*2];
-            
-            
-            for c = 1 : ch.nClusters
-                nSpikesNow = sum(ch.clusters == c);
-                spikesNow = ch.spikeWaveforms((ch.clusters == c),:);
-                stdSpikes = std(ch.spikeWaveforms((ch.clusters == c),:));
-                if nSpikesNow > 1
-                    meanSpike = mean(spikesNow);
-                else
-                    meanSpike = spikesNow;
+            % for each cluster, calculate average waveform, and S.D.;
+          
+            tRangeCentered = (-ch.timestampsPrePeak : ch.timestampsPostPeak) * ch.msPerTs; %각 waveform의 t range. spike위치가 0이 되게 centering되어 있고, milisecond 단위로 변환 
+         
+            for c = 1 : ch.nClusters %각 클러스터마다 반복 
+                nSpikesNow = sum(ch.clusters == c);% 클러스터 내 spike 개수 저장 
+                spikesNow = ch.spikeWaveforms((ch.clusters == c),:); %현 cluster 내 spike waveform만 모은 행렬 
+                stdSpikes = std(ch.spikeWaveforms((ch.clusters == c),:));% 표준편차 계산
+                
+                %meanSpike를 정의 
+                if nSpikesNow > 1 % 클러스터 내에 spike 개수가 2개 이상이면 
+                    meanSpike = mean(spikesNow); %모든 spike의 waveform을 평균한 것이 meanSpike
+                else %클러스터 내에 spike 개수가 1개 뿐이면 
+                    meanSpike = spikesNow;% 굳이  mean을 계산할 필요 없이 그 spike가 곧 meanSpike
                 end
 
-                curve1 = meanSpike - stdSpikes;
-                curve2 = meanSpike + stdSpikes;
-                
-                subplot(ch.nClusters, 1, c);
-                plot(x, curve1, 'k--', 'LineWidth', 1, 'Color', ch.clusterColors(c));
-                hold on;
-                plot(x, curve2, 'k--', 'LineWidth', 1, 'Color', ch.clusterColors(c));
-                hold on;
-                
-                %inBetween = [curve1, fliplr(curve2)];
-                %fill(x2, inBetween, ch.clusterColors(c));
-                
-    
-                axis tight   
-                title('Mean spike(+-std) for group ' + string(c) + ', n = ' + string(nSpikesNow) );
-                % add mean spike
-                plot(x, meanSpike,'Linewidth',2,'Color','k');
-                ylim(ylimForAll);%3개 클러스터의 축 통일
+                % 구조체에 클러스터별 데이터 저장장
+                ch.meanSpikesStruct(c).nSpikes  = nSpikesNow; % cluster 내 spike 개수 저장 
+                ch.meanSpikesStruct(c).meanSpike = meanSpike; % meanSpike waveform 저장 
+                ch.meanSpikesStruct(c).std = stdSpikes;% standard deviation 저장 
+                ch.meanSpikesStruct(c).tRangeCentered = tRangeCentered; %waveform의 t range 저장 
             end
-            hold off;
-        end % method drawClusterMeanSpikes
+        end % end of calculateClusterMeanSpikes
+        
+        function [meanSpikeWaveform, std, tRangeCentered, nSpikes] = getClusterMeanSpike(ch, clusterNum)
+            meanSpikeWaveform = ch.meanSpikesStruct(clusterNum).meanSpike;
+            std = ch.meanSpikesStruct(clusterNum).std;
+            tRangeCentered = ch.meanSpikesStruct(clusterNum).tRangeCentered;
+            nSpikes = ch.meanSpikesStruct(clusterNum).nSpikes;
+        end %end of getClusterMeanSpike
+        
+ 
 
         function drawRaster(ch, color)
             % from CyborgBrainOrg.m
