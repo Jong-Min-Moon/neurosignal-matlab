@@ -164,30 +164,7 @@ classdef channel_from_data < handle
         end
 
 
-    % drawing functions       
-        function drawPCA(ch)
-            % from CyborgBrainOrg.m
-
-            subplot(2,1,1)
-            bar(ch.explainedVar);
-            title("Explained variance by principal component");
-            
-            subplot(2,1,2)
-            PC1 = ch.PCScores(:,1);
-            PC2 = ch.PCScores(:,2);
-            for c = 1 : ch.nClusters
-                scatter(PC1((ch.clusters == c),:), PC2((ch.clusters == c),:) ,ch.clusterColors(c), 'filled')
-                hold on;
-                
-            end
-            legend(["cluster 1", "cluster 2", "cluster 3"])
-   
-            xlabel('First PC');
-            ylabel('Second PC');
-            title('Principal Component Scatter Plot with Colored Clusters');    
-            legend("cluster " + string(1 : ch.nClusters));
-        end
-        
+    % drawing functions               
         function calculateClusterMeanSpikes(ch)
             % from CyborgBrainOrg.m
             % for each cluster, calculate average waveform, and S.D.;
