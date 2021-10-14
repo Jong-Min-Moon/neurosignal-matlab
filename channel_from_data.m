@@ -281,17 +281,15 @@ classdef channel_from_data < handle
             hold off
         end % drawColoredRaster
         
-        function getISIbeforePCA(ch)
+        function ISIbeforePCA = getISIbeforePCA(ch)
             for j = 2 : ch.nSpikes
                 if ch.spikeTimestamps(j) > 0
                     ch.ISIbeforePCA(j) = ch.spikeTimestamps(j) - ch.spikeTimestamps(j - 1);
-                    end  
-                end
-            end
+                end  
+            end      
+            ch.ISIbeforePCA(1) = [];
             
-            ch.spikeTimestamps(1) = [];
-            
-            
+            ISIbeforePCA = ch.ISIbeforePCA;
           
         end % end of getISIbeforePCA
         
