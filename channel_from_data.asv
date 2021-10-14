@@ -26,7 +26,6 @@ classdef channel_from_data < handle
         totalMeanSpikeStruct
         meanSpikesStruct
         
-        ISIbeforePCA
         ISI
         ISIStruct
         thetaWaves
@@ -281,19 +280,26 @@ classdef channel_from_data < handle
             hold off
         end % drawColoredRaster
         
-        function getISIbeforePCA(ch)
-            for j = 2 : ch.nSpikes
-                if ch.spikeTimestamps(j) > 0
-                    ch.ISIbeforePCA(j) = ch.spikeTimestamps(j) - ch.spikeTimestamps(j - 1);
+        function calculateISIbeforePCA(ch)
+
+            for c = 1 : ch.nClusters
+                for j = 2 : ch.nSpikesPerCluster(c)
+                    if ch.spikeTimestampsMatrix(c, j) > 0
+                        ch.ISI(c,j) = ch.spikeTimestampsMatrix(c, j) - ch.spikeTimestampsMatrix(c, j - 1);
                     end  
                 end
             end
             
-            ch.spikeTimestamps(1) = [];
+            ch.ISI(:, 1) = [];
             
             
-          
-        end % end of getISIbeforePCA
+            %클러스터별 ISI 값을 구조체(struct)에 저장
+            for c = 1 : ch.nClusters %cluster 1부터 마지막 cluster까지 반복. c가 클러스터 번호
+                ch.ISIStruct(c).values = ch.ISI(c, 1 : ch.nSpikesPerCluster(c) - 1) * ch.msPerTs; %timestamp 단위를 milisecond 단위로 변환 
+                ch.ISIStruct(c).clusterNum = c;%클러스터 번호 저장 
+                ch.ISIStruct(c).nSpikes = ch.nSpikesPerCluster(c);% 클러스터 내 spike 개수 저장
+            end
+        end % end of calculateISI
         
         function calculateISI(ch)
             % from CyborgBrainOrg.m
