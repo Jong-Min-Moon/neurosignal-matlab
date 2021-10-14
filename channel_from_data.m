@@ -281,17 +281,11 @@ classdef channel_from_data < handle
             hold off
         end % drawColoredRaster
         
-        function ISIbeforePCA = getISIbeforePCA(ch)
-            for j = 2 : ch.nSpikes
-                if ch.spikeTimestamps(j) > 0
-                    ch.ISIbeforePCA(j) = ch.spikeTimestamps(j) - ch.spikeTimestamps(j - 1);
-                end  
-            end      
-            ch.ISIbeforePCA(1) = [];
-            
-            ISIbeforePCA = ch.ISIbeforePCA;
+        function ISIbeforePCA = getISIvaluesBeforePCA(ch)
+            ch.ISIbeforePCA = diff(ch.spikeTimestamps);
+            ISIbeforePCA = ch.ISIbeforePCA * ch.msPerTs;
           
-        end % end of getISIbeforePCA
+        end % end of getISIvaluesBeforePCA
         
         function calculateISI(ch)
             % from CyborgBrainOrg.m
