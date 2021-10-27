@@ -351,10 +351,10 @@ classdef channel_from_data < handle
               burst = 0;                            % current burst number
             
               % convert parameters into timestamp
-              begISI = round(begISI_ms/msPerTs)
-              endISI = round(endISI_ms/msPerTs)
-              minIBI = round(minIBI_ms/msPerTs)
-              minDurn = round(minDurn_ms/msPerTs)
+              begISI = round(begISI_ms/msPerTs);
+              endISI = round(endISI_ms/msPerTs);
+              minIBI = round(minIBI_ms/msPerTs);
+              minDurn = round(minDurn_ms/msPerTs);
               
               %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
               % Phase 1 -- burst detection.
@@ -446,8 +446,8 @@ classdef channel_from_data < handle
               
               nBurstsPhase1 = size(bursts);
               nBurstsPhase1 = nBurstsPhase1(1);
-              fprintf("phase 1: found %d bursts, using parameters begISI and endISI\n", nBurstsPhase1)
-              bursts
+              fprintf("phase 1 result: found %d bursts, using parameters begISI and endISI\n\n", nBurstsPhase1)
+              %bursts
             
             
             
@@ -460,12 +460,11 @@ classdef channel_from_data < handle
               % Here we see if any pair of bursts have an IBI *less* than minIBI; 
               % if so, we then merge the bursts.
               % We specifically need to check when say three bursts are merged into one.
-              fprintf("phase 2: merging of bursts\n")
               
               ibis = bursts(: ,'IBI');
               ibis = table2array(ibis);
               isMergeNeeded = ibis < minIBI;
-              isAnyMergeNeeded = logical(sum(isMergeNeeded))
+              isAnyMergeNeeded = logical(sum(isMergeNeeded));
               if isAnyMergeNeeded
                 % Merge bursts efficiently.
                 % Work backwards through the list, 
@@ -486,8 +485,8 @@ classdef channel_from_data < handle
             
               nBurstsPhase2 = size(bursts);
               nBurstsPhase2 = nBurstsPhase2(1);
-              fprintf("phase 2 result: after filtering, %d bursts left, using parameters minIBI\n", nBurstsPhase2)
-              bursts
+              fprintf("phase 2 result: after merging by minIBI, %d bursts left\n\n", nBurstsPhase2)
+              % bursts
             
             
             
@@ -506,7 +505,6 @@ classdef channel_from_data < handle
             
               % LEN = number of spikes in a burst.
               % DURN = duration of burst.
-              fprintf("phase 3: removing small bursts\n")
             
               bursts = table2array(bursts);
               len = bursts(: , 2) - bursts(: , 1) + 1; %end, beg
@@ -515,14 +513,14 @@ classdef channel_from_data < handle
               bursts = array2table(bursts, 'VariableNames',{'beg','end','IBI', 'len', 'durn'});
             
               IsReject = ((durn' < minDurn) | ( len < minSpikes));
-              isAnyRejects = logical(sum(IsReject))
-            
-              fprintf("%d bursts whose duration is less than %d timestamps were removed ", sum(IsReject), minDurn)
+              isAnyRejects = logical(sum(IsReject));
+
+              fprintf("phase 3 result: %d bursts were removed whose duration is less than %d milisecond(%d timestamps) or have spikes less than %d ", sum(IsReject), minDurn_ms, minDurn, minSpikes)
               rejectsIndex = find(IsReject);
             
               % delete small bursts
               if isAnyRejects
-                bursts = bursts(not(IsReject) , : )
+                bursts = bursts(not(IsReject) , : );
               end % end of if isAnyRejects
               
               
@@ -550,14 +548,14 @@ classdef channel_from_data < handle
                   ibi2 = NaN;
                 end
                 bursts(: ,3) = ibi2; %IBI
-                SIsize = length(meanISI);
-                SI = ones(SIsize,1);
+               
             
                 
-                bursts = [bursts, meanISI, SI];
-                bursts = array2table(bursts, 'VariableNames',{'beg','end','IBI', 'len', 'durn', 'meanISI', 'SI'});
+                bursts = [bursts, meanISI];
+                bursts = array2table(bursts, 'VariableNames',{'beg','end','IBI', 'len', 'durn', 'meanISI'});
                 end %end of {if nBursts == 0}
-                ch.bursts = bursts
+                ch.bursts = bursts;
+
             end %end of the function   
             
             
