@@ -1,4 +1,4 @@
-function bursts = detectBurstsMI(nspikes, spikes, msPerTs, begISI_ms, endISI_ms, minIBI_ms, minDurn_ms, minSpikes)
+function bursts = detectBurstsMI(nspikes, spikes, msPerTs, begISI_ms, endISI_ms , minSpikes, minDurn_ms, minIBI_ms)
   % input:
   % - one spike train
   % - begISI : maximum interval to start burst; max ISI at start of burst; Beginning inter spike interval
@@ -31,10 +31,10 @@ function bursts = detectBurstsMI(nspikes, spikes, msPerTs, begISI_ms, endISI_ms,
     burst = 0;                            % current burst number
   
     % convert parameters into timestamp
-    begISI = round(begISI_ms/msPerTs);
-    endISI = round(endISI_ms/msPerTs);
-    minIBI = round(minIBI_ms/msPerTs);
-    minDurn = round(minDurn_ms/msPerTs);
+    begISI = round(begISI_ms/msPerTs)
+    endISI = round(endISI_ms/msPerTs)
+    minIBI = round(minIBI_ms/msPerTs)
+    minDurn = round(minDurn_ms/msPerTs)
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Phase 1 -- burst detection.
@@ -207,9 +207,9 @@ function bursts = detectBurstsMI(nspikes, spikes, msPerTs, begISI_ms, endISI_ms,
     
     
     nBursts = size(bursts);
-    nBursts = nBursts(1)
+    nBursts = nBursts(1);
     if nBursts == 0 % if all the bursts were removed during phase 3.
-      bursts = noBursts
+      bursts = noBursts;
     else % else of {nBursts == 0}
       % Compute mean ISIS
       bursts = table2array(bursts);
@@ -224,14 +224,14 @@ function bursts = detectBurstsMI(nspikes, spikes, msPerTs, begISI_ms, endISI_ms,
         ibiEnd = spikes( bursts(: , 2) ); %end
         ibiEnd = ibiEnd(1:(nBursts-1));
   
-        ibi2 = ibiBeg - ibiEnd
-        ibi2 = [NaN; ibi2']
+        ibi2 = ibiBeg - ibiEnd;
+        ibi2 = [NaN; ibi2'];
       else
         ibi2 = NaN;
       end
       bursts(: ,3) = ibi2; %IBI
-      SIsize = length(meanISI)
-      SI = ones(SIsize,1)
+      SIsize = length(meanISI);
+      SI = ones(SIsize,1);
   
       
       bursts = [bursts, meanISI, SI];
