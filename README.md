@@ -22,6 +22,25 @@ Figure 8 shows (top line) the inverted average waveform for each cluster and the
 
 # burst detection
 
+## method detectBurstsMI
+
+### input:
+
+1.  one spike train
+
+2. parameters
+   - **begISI** : maximum interval to start burst; max ISI at start of burst; Beginning inter spike interval
+
+   - **endISI**: maximum interval to end burst; max ISI in burst; Ending inter spike interval
+
+   - **minIBI**: minimum interval between bursts (threshold for combining bursts)
+   
+   - **minDurn**: minimum duration of a burst; minimum duration to consider as burst
+
+   - **minSpikes**: minimum number of spikes in burst; minimum number of spikes to consider as burst
+
+### output:
+bursts found using max interval method.
 
 ```
 [^fn1]: https://github.com/CyBrainOrg
