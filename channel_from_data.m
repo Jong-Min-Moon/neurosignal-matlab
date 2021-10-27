@@ -36,6 +36,7 @@ classdef channel_from_data < handle
         clusterColors
 
         bursts
+        bursts_ms
     end
     
     methods
@@ -317,7 +318,7 @@ classdef channel_from_data < handle
             nSpikes = ch.ISIStruct(clusterNum).nSpikes;  
         end %end of getISIvalues
         
-        function bursts = detectBurstsMI(ch, begISI_ms, endISI_ms , minSpikes, minDurn_ms, minIBI_ms)
+        function [bursts, bursts_ms] = detectBurstsMI(ch, begISI_ms, endISI_ms , minSpikes, minDurn_ms, minIBI_ms)
             % input:
             % - one spike train
             % - begISI : maximum interval to start burst; max ISI at start of burst; Beginning inter spike interval
@@ -552,9 +553,19 @@ classdef channel_from_data < handle
             
                 
                 bursts = [bursts, meanISI];
-                bursts = array2table(bursts, 'VariableNames',{'beg','end','IBI', 'len', 'durn', 'meanISI'});
+                bursts_ms = bursts;
+                bursts = array2table(bursts, 'VariableNames',{'beg','end','IBI', 'nSpikes', 'durn', 'meanISI'});
+
+                bursts_ms(:, 3) = bursts_ms(:, 3) * msPerTs
+                bursts_ms(:, 5) = bursts_ms(:, 5) * msPerTs
+                bursts_ms(:, 6) = bursts_ms(:, 6) * msPerTs
+                bursts_ms = array2table(bursts_ms, 'VariableNames',{'beg','end','IBI', 'nSpikes', 'durn', 'meanISI'});
+
+
                 end %end of {if nBursts == 0}
                 ch.bursts = bursts;
+                ch.bursts_ms = bursts_ms;
+
 
             end %end of the function   
             
