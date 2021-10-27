@@ -237,6 +237,6 @@ function bursts = detectBurstsMI(nspikes, spikes, msPerTs, begISI_ms, endISI_ms 
       bursts = [bursts, meanISI, SI];
       bursts = array2table(bursts, 'VariableNames',{'beg','end','IBI', 'len', 'durn', 'meanISI', 'SI'});
       end %end of {if nBursts == 0}
-  
+     
   
   
