@@ -317,7 +317,7 @@ classdef channel_from_data < handle
             nSpikes = ch.ISIStruct(clusterNum).nSpikes;  
         end %end of getISIvalues
         
-        function bursts = detectBurstsMI(ch, begISI_ms, endISI_ms , minSpikes, minDurn_ms, minIBI_ms)
+        function bursts = detectBurstsMI(ch, begISI, endISI, minSpikes, minDurn, minIBI)
             % input:
             % - one spike train
             % - begISI : maximum interval to start burst; max ISI at start of burst; Beginning inter spike interval
@@ -499,7 +499,7 @@ classdef channel_from_data < handle
             IsReject = ((durn' < minDurn) | ( len < minSpikes));
             isAnyRejects = logical(sum(IsReject));
 
-            fprintf("phase 3 result: %d bursts were removed whose duration is less than %d milisecond(%d timestamps) or have spikes less than %d ", sum(IsReject), minDurn_ms, minDurn, minSpikes)
+            fprintf("phase 3 result: %d bursts were removed whose duration is less than %d milisecond or have spikes less than %d ", sum(IsReject), minDurn, minSpikes)
             rejectsIndex = find(IsReject);
             
             % delete small bursts
@@ -535,7 +535,7 @@ classdef channel_from_data < handle
                
                            
                 bursts = [bursts, meanISI];
-                bursts = array2table(bursts, 'VariableNames',{'beg','end','IBI', 'nSpikes', 'durn', 'meanISI'})
+                bursts = array2table(bursts, 'VariableNames',{'beg','end','IBI', 'nSpikes', 'durn', 'meanISI'});
                 end %end of {if nBursts == 0}
                 ch.bursts = bursts;
             end %end of the function   

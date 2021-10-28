@@ -1,19 +1,21 @@
 # spikes data of o1_ch8_m1, directly copied from matlab
+library(IGM.MEA)
 spikes = c(12020,15092,26869,27124,29941,32236,32756,35060,48117,49907,51700,57077,59636,61428,66805,70132,73974,74739,79862,86251,92917,93428,1.093e+05,1.1673e+05,1.1852e+05,1.2236e+05,1.2338e+05,1.3157e+05,1.3413e+05,1.3848e+05,1.5308e+05,1.6511e+05,1.7227e+05,1.7278e+05,1.7868e+05,1.7945e+05,1.8047e+05,1.8328e+05,1.8815e+05,1.948e+05,2.0274e+05,2.0376e+05,2.1042e+05,2.1656e+05,2.2578e+05,2.268e+05,2.2936e+05,2.5112e+05,2.5266e+05,2.6392e+05,2.6828e+05,2.6981e+05,2.7391e+05,2.8286e+05,2.844e+05,2.9234e+05,2.9797e+05,3.018e+05,3.1026e+05,3.1103e+05,3.1871e+05,3.3586e+05,3.3765e+05,3.397e+05,3.4124e+05,3.4277e+05,3.5096e+05,3.6274e+05,3.6479e+05,3.694e+05,3.6965e+05,3.7528e+05,3.8373e+05,3.845e+05,3.8885e+05,3.9116e+05,3.9628e+05,4.2264e+05,4.2418e+05,4.3698e+05,4.426e+05,4.5029e+05,4.526e+05,4.6437e+05,4.7256e+05,4.7615e+05,4.7717e+05,4.7794e+05,4.782e+05,4.8076e+05,4.8229e+05,4.8536e+05,4.892e+05,4.9074e+05,4.9305e+05,4.933e+05,4.9868e+05,5.0124e+05,5.0252e+05,5.0431e+05,5.0456e+05,5.0508e+05,5.1788e+05,5.2607e+05,5.2632e+05,5.294e+05,5.3298e+05,5.3631e+05,5.422e+05,5.5474e+05,5.6165e+05,5.6293e+05,5.6344e+05
 )
+
+nSpikes = length(spikes)
 msPerTs = 0.0410
 spikes_ms = spikes*msPerTs
-nSpikes = length(spikes)
 
 # parameters in miliseconds
 begISI = 300
 endISI = 301
-minSpikes = 5
+minSpikes = 10
 minDurn = 50
 minIBI = 200
 
 
 
-mypar = list(beg.isi = round(begISI/msPerTs), end.isi =  round(endISI/msPerTs), min.ibi =  round(minIBI/msPerTs), min.durn =  round(minDurn/msPerTs), min.spikes =  minSpikes)
-result = mi.find.bursts(spikes,mypar)
+mypar = list(beg.isi = begISI, end.isi =  endISI, min.ibi =  minIBI, min.durn =  minDurn, min.spikes =  minSpikes)
+result = mi.find.bursts(spikes_ms,mypar)
 
