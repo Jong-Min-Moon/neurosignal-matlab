@@ -1,4 +1,0 @@
-
-            % begISI, endISI , minSpikes, minDurn, minIBI, (in milisecond)
-            % the order of the parameters is the same as the reference
-o1_ch8_m1.detectBurstsMI(300, 301, 10, 50, 200)

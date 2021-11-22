@@ -20,7 +20,7 @@ Figure 7 shows the colored raster plot accordingly to the clustering results;
 Figure 8 shows (top line) the inverted average waveform for each cluster and the local maximum and corresponding FWHM. Bottom line shows Interspike Intervals histogram for each cluster;
 [^fn1]
 
-# burst detection
+# burst detection.
 
 ## method detectBurstsMI
 
