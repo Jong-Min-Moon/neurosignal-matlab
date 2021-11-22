@@ -107,8 +107,8 @@ classdef channelReader < handle
                     i = i - 1;
                 end
                 
-                if i < nCol
-                    fprintf('%d행의 관측치 수가 %d로, %d개인 다른 행보다 관측치 수가 적습니다.\n', r, i, nCol);
+                if i < size(x, 2)
+                    fprintf('%d행의 관측치 수가 %d로, %d개인 다른 행보다 관측치 수가 적습니다.\n', r, i, )
                 end
 
                 cleanRow = x(r, 1:i);
@@ -130,7 +130,7 @@ classdef channelReader < handle
             
             if sum(isnan(lastCol)) >= nRow
                 cleansedX(:, end) = [];
-                fprintf('파일의 마지막 열이 모두 공백 문자로 되어 있습니다. matlab은 공백 문자를 NaN으로 불러옵니다. 해당 열을 삭제했습니다.\n');
+                fprintf('파일의 마지막 열이 모두 공백 문자로 되어 있습니다. matlab은 공백 문자를 NaN으로 불러옵니다. 해당 열을 삭제했습니다.\n')
             end
         end
         
