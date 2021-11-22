@@ -26,8 +26,8 @@ classdef channelReader < handle
             end
             
             
-            xVector = chReader.vectorizeX(x);
-            [tVector, sampleRate] = chReader.vectorizeT(binTimeStart, size(x,2));
+            [xVector, nObsPerRow] = chReader.vectorizeX(x);
+            [tVector, sampleRate] = chReader.vectorizeT(binTimeStart, nObsPerRow, numel(xVector));
             
             [xResampled, tResampled] = resample(xVector, tVector, sampleRate, 'spline'); %resample 및 interpolation 실행
           
@@ -49,7 +49,7 @@ classdef channelReader < handle
                 x(:, end) = [];
             end
                         
-            xVector = chReader.vectorizeX(x);
+            [xVector, ~] = chReader.vectorizeX(x);
             tVector = chReader.makeTimeVariable(numel(xVector), sampleRate);
           
             channelObject = channel(xVector, tVector, sampleRate, organoidNum, channelNum, month);    
@@ -60,28 +60,59 @@ classdef channelReader < handle
             tDuration = (nTotalObs / sampleRate); %첫 측정치 timepoint에서 마지막 측정치 timepoint까지의 time interval
             lastObervationTimepoint = tDuration - 1/sampleRate;
             t = linspace(0, lastObervationTimepoint, nTotalObs); % 위 두 값을 기반으로 시간 변수 생성
-            t = t';
         end % end of makeTimeVariable
         
         
-        function [tVector, sf] = vectorizeT(chreader, binTimeStart, nCol)
+        function [tVector, sf] = vectorizeT(chreader, binTimeStart, nObsPerRow, nx)
+            tVector = zeros(1, nx);
+            
             binTimeInterval = diff(binTimeStart); % 각 row간 time interval 계산
             binTimeInterval(end + 1) = binTimeInterval(end); %마지막 row에서는 interval 계산이 불가하므로 그 전 row 값을 사용 
-
-            % 1.3. 각 row 내에서 ncol개의 데이터가 균등 시간 간격으로 측정되었다고 가정하고, 시간 array t를 생성 
-            tPercentileInsideBin = linspace(0, (nCol-1)/nCol, nCol);
-            tVector = binTimeStart + binTimeInterval * tPercentileInsideBin;
-            tVector = transpose(tVector);
-            tVector = tVector(:);
             
-            msPerTimestamp = mean(binTimeInterval) / nCol; % milisecond per timestamp. timestamp->ms conversion.
+            % 각 row 내에서 데이터가 균등 시간 간격으로 측정되었다고 가정하고, 시간 array t를 생성
+            % 관측치가 적은 row를 탐지하고 NaN을 제거했기 때문에, t를 만들 때도 행별로 해야 함.
+            startPoint = 1;
+            endPoint = 0;
+            for r = 1:length(nObsPerRow)
+                nObs = nObsPerRow(r);
+                tPercentileInsideBin = linspace(0, (nObs - 1) / nObs, nObs);
+                cleanT = binTimeStart(r) + binTimeInterval(r) * tPercentileInsideBin;
+                
+                endPoint = endPoint + length(cleanT);
+                startPoint = endPoint - length(cleanT) + 1;
+                
+                tVector(startPoint : endPoint) = cleanT;
+            end
+            msPerTimestamp = mean(binTimeInterval' ./ nObsPerRow); % milisecond per timestamp. timestamp->ms conversion.
             sf = 1 / msPerTimestamp; % 데이터에서 계산한 sampling frequency 
         end %end of vectorizeT
         
-        function xVector = vectorizeX(chReader, x)
-            nObsPerRow = size(x,2); %row당 observation 개수 저장
-            xVector = transpose(x);
-            xVector = xVector(:); %이게 matrix를 vector로 바꾸는 명령어임.
+        function [xVector, nObsPerRow] = vectorizeX(chReader, x)
+            nRow = size(x, 1);
+            nCol = size(x, 2);
+            
+            nObsPerRow = zeros(1, nRow);
+            xVector = zeros(1,nRow*nCol);
+            
+            %관측치가 적은 row를 탐지하고 NaN을 제거하는 과정.
+            %각 row에서, 맨 끝부터 시작해 NaN이 있는지 확인.
+            %NaN이 나오지 않는 순간 탐지를 종료하고, 그 앞에 있는 값들은 다 정상값으로 간주
+            % 즉, 끝부분에 연속적으로 나오는 NaN만 제거.
+            startPoint = 1;
+            endPoint = 0;
+            for r = 1 : nRow
+                i = nCol;
+                while isnan(x(r, i))
+                    i = i - 1;
+                end
+                cleanRow = x(r, 1:i);
+                nObs = length(cleanRow);
+                nObsPerRow(r) = nObs;
+                endPoint = endPoint + length(cleanRow);
+                startPoint = endPoint - length(cleanRow) + 1;
+                xVector(startPoint : endPoint) = cleanRow;
+            end
+            xVector = xVector(1:endPoint);
         end
  
         

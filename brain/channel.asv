@@ -6,10 +6,7 @@ classdef channel < handle
         sf
         msPerTs
         nTimestamps
-        
         startTime
-        endTimeApprox
-        durationApprox
         
         t 
         raw
@@ -19,6 +16,7 @@ classdef channel < handle
         timestampsPostPeak
         
         spikeTimestamps
+        spikeTimeMs
         spikeTimestampsMatrix
         spikeWaveforms
         
@@ -59,10 +57,7 @@ classdef channel < handle
             ch.t = t;
             ch.raw = x;
             ch.nTimestamps = length(t);
-            
             ch.startTime = t(1);
-            ch.endTimeApprox = t(end);
-            ch.durationApprox = t(end) - t(1);
             
             ch.clusterColors = ["red", "green", "blue", "magenta", "cyan", "yellow"]';
         end
