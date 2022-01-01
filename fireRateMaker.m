@@ -5,6 +5,7 @@ classdef fireRateMaker < handle
         startTimeMax
         selectedTimestamp
         selectedMs
+        th
     end
     
     methods
@@ -16,13 +17,22 @@ classdef fireRateMaker < handle
            frm.selectedMs = {};
         end
 
+        function addChannels(frm, varargin)
+            disp(nargin)
+            disp(length(varargin))
+            for i = 1:(length(varargin))
+                channelObjectNow = varargin{i};
+                frm.addChannel(channelObjectNow);
+            end
+        end
+        
         function addChannel(frm, channelObject)
             
             if (length(channelObject.spikeTimestamps) < 1)
                 fprintf("This channel does not have spikes information. Do detectSpikes(possibly with lower threshold value). Current total number of channels = %d", length(frm.channels));
             else
                 frm.channels{end + 1} = channelObject;
-                fprintf("Added a channel object. Current total number of channels = %d\n", length(frm.channels));
+                fprintf("Added a channel object with %d spikes, timerange %d - %d(s) \n Current total number of channels = %d\n", channelObject.nSpikes, channelObject.startTime, channelObject.endTimeApprox, length(frm.channels));
             end
         end
         
@@ -30,12 +40,11 @@ classdef fireRateMaker < handle
             frm.channels(end) = [];
         end
         
-        function processing(frm, cutoffVal, binWidth)
+        function processing(frm, cutoffVal)
             frm.cutoff(cutoffVal);
             frm.turnSelecteSpikesIntoMs()
             frm.setEndTimeMin();
             frm.setStartTimeMax();
-            frm.fireRate(binWidth);
         end
         
         function cutoff(frm, cutoffVal) %step 1
@@ -86,10 +95,10 @@ classdef fireRateMaker < handle
         end
         
         
-        function fireRate(frm, binWidth)
+        function getFireRate(frm, binWidth)
             % 1. edges
             if frm.startTimeMax >= frm.endTimeMin
-                print("error: startTime >= endTime")
+                disp("error: startTime >= endTime")
                 return
             end
         
@@ -100,9 +109,8 @@ classdef fireRateMaker < handle
             for j  = 1 : length(frm.channels)
                 th = th + histc(frm.selectedMs{j}, edges);
             end
-            th = (th / binWidth) / length(frm.channels); %rate and averaging
-            figure
-            bar(edges, th)
+            frm.th = (th / binWidth) / length(frm.channels); %rate and averaging
+            
         end
     end % methods
 end %class
