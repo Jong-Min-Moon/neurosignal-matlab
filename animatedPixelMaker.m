@@ -32,11 +32,30 @@ classdef animatedPixelMaker < handle
             end
         end
         
+        function applyBandPassFilter(apm, bandRange)
+            for i = 1 : apm.pixelsNRow
+                for j = 1 : apm.pixelsNCol
+                    apm.pixels{i,j}.applyBandpassFilter(bandRange);
+                end
+            end
+        end %applyBandPathFilter
+        
+        
+        function detectSpikes(apm, thres, preTime, postTime) 
+            for i = 1 : apm.pixelsNRow
+                for j = 1 : apm.pixelsNCol
+                    apm.pixels{i,j}.detectSpikes(thres, preTime, postTime);
+                end % j loop
+            end % i loop
+        end % function detectSpikes
+        
+        
         function preProcess(apm, cutoffVal, binWidth)
             % first do the preprocessing
             % cutoff and setting startTime and endTime
             for i = 1 : apm.pixelsNRow
                 for j = 1 : apm.pixelsNCol
+                   
                     apm.pixels{i,j}.processing(cutoffVal);
                 end
             end
@@ -54,6 +73,7 @@ classdef animatedPixelMaker < handle
             % fireing rate
             for i = 1 : apm.pixelsNRow
                 for j = 1 : apm.pixelsNCol
+                     
                     apm.pixels{i,j}.startTimeMax = apm.startTimeMax;
                     apm.pixels{i,j}.endTimeMin = apm.endTimeMin;
                     apm.pixels{i,j}.getFireRate(binWidth);
@@ -93,25 +113,68 @@ classdef animatedPixelMaker < handle
         end
         
             
-        function makeAnimatedPixels(apm)
+        function makeAnimatedPixels(apm, colormap)
+            thMax = 0;
             for i = 1:apm.timeLength
                 matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);
                 for j = 1 : apm.pixelsNRow
                     for k = 1 : apm.pixelsNCol
-                        pixelNow = apm.pixels{j,k};
-                        thNow = pixelNow.th;
-                        matrixNow(j,k) = thNow(i) ;          
-                    end
-                end
+                        thNow = apm.pixels{j,k}.th;
+                        matrixNow(j,k) = thNow(i) ;
+                        
+                        if apm.pixels{j,k}.thMax > thMax
+                            thMax = apm.pixels{j,k}.thMax;
+                        end % loop: get thMax over all pixel
+                    end % k loop: over columns
+                end % l loop: over rows
                 apm.matrices{i} = matrixNow;
             end
             
             figure;
             for i = 1:apm.timeLength
-                heatmap(apm.matrices{i})
+                heatmap(apm.matrices{i}, 'ColorLimits',[0 thMax], 'Colormap', colormap);
                 drawnow;
             end
-        end
+            
+            
+            
+        end% makeAnimatedPixels(apm, colormap)
+        
+        function RecordAnimatedPixels(apm, colormap, filename, framerate )
+            thMax = 0;
+            for i = 1:apm.timeLength
+                matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);
+                for j = 1 : apm.pixelsNRow
+                    for k = 1 : apm.pixelsNCol
+                        thNow = apm.pixels{j,k}.th;
+                        matrixNow(j,k) = thNow(i) ;
+                        
+                        if apm.pixels{j,k}.thMax > thMax
+                            thMax = apm.pixels{j,k}.thMax;
+                        end % loop: get thMax over all pixel
+                    end % k loop: over columns
+                end % l loop: over rows
+                apm.matrices{i} = matrixNow;
+            end
+            
+            figure;
+            for i = 1:apm.timeLength
+                heatmap(apm.matrices{i}, 'ColorLimits',[0 thMax], 'Colormap', colormap);
+                F(i) = getframe(gcf);
+            end
+            
+            v = VideoWriter(filename, 'MPEG-4');
+            v.FrameRate = framerate; %1초에 xframe. 총 100 frame이라면 100/x 초짜리가 될 것.
+            v.Quality = 100;
+
+            open(v);
+            writeVideo(v, F);
+            close(v);
+            
+            
+            
+        end% makeAnimatedPixels(apm, colormap)
+    
             
             
        

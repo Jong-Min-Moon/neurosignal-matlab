@@ -1,4 +1,5 @@
 classdef channel < handle
+    %핸들 클래스는 object를 참조하는 객체를 정의합니다. 객체를 복사하면 동일한 객체에 대한 *참조*가 하나 더 생성됩니다.
     properties
         organoidNum
         channelNum

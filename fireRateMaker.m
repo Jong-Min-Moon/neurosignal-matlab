@@ -5,7 +5,9 @@ classdef fireRateMaker < handle
         startTimeMax
         selectedTimestamp
         selectedMs
-        th
+        th %time histogram
+        thMax % max value of time histogram. For unified color scale of the heatmap over different pixels.
+        edges
     end
     
     methods
@@ -26,19 +28,36 @@ classdef fireRateMaker < handle
             end
         end
         
-        function addChannel(frm, channelObject)
+        %function addChannel(frm, channelObject)
             
-            if (length(channelObject.spikeTimestamps) < 1)
-                fprintf("This channel does not have spikes information. Do detectSpikes(possibly with lower threshold value). Current total number of channels = %d", length(frm.channels));
-            else
-                frm.channels{end + 1} = channelObject;
-                fprintf("Added a channel object with %d spikes, timerange %d - %d(s) \n Current total number of channels = %d\n", channelObject.nSpikes, channelObject.startTime, channelObject.endTimeApprox, length(frm.channels));
-            end
+            %if (length(channelObject.spikeTimestamps) < 1)
+            %    fprintf("This channel does not have spikes information. Do detectSpikes(possibly with lower threshold value). Current total number of channels = %d", length(frm.channels));
+            %else
+                %frm.channels{end + 1} = channelObject;
+                %fprintf("Added a channel object with %d spikes, timerange %d - %d(s) \n Current total number of channels = %d\n", channelObject.nSpikes, channelObject.startTime, channelObject.endTimeApprox, length(frm.channels));
+            %end
+        %end
+        
+        function addChannel(frm, channelObject)
+            frm.channels{end + 1} = channelObject;
+            fprintf("Added a channel object with %d spikes, timerange %d - %d(s) \n Current total number of channels = %d\n", channelObject.nSpikes, channelObject.startTime, channelObject.endTimeApprox, length(frm.channels));
         end
         
         function deleteLastChannel(frm)
             frm.channels(end) = [];
         end
+        
+        function applyBandpassFilter(frm, bandrange)
+            for i = 1 : length(frm.channels)
+                frm.channels{i}.bandPass(bandrange); %apply bandpass filter x-y hz
+            end % for loop
+        end % function applyBandpassFilter
+
+        function detectSpikes(frm, thres, preTime, postTime)
+             for i = 1 : length(frm.channels)
+                frm.channels{i}.detectSpikes(thres, preTime, postTime); %apply bandpass filter x-y hz
+            end % for loop
+        end % function detectSpikes
         
         function processing(frm, cutoffVal)
             frm.cutoff(cutoffVal);
@@ -107,10 +126,14 @@ classdef fireRateMaker < handle
         
             %2. histc with for loop
             for j  = 1 : length(frm.channels)
-                th = th + histc(frm.selectedMs{j}, edges);
+              
+                if ~isempty(frm.selectedMs{j}) % 선별된 spike가 아예 없으면 건너뜀
+                    th = th + histc(frm.selectedMs{j}, edges);
+                end
             end
-            frm.th = (th / binWidth) / length(frm.channels); %rate and averaging
-            
+            frm.th = (th / binWidth) / length(frm.channels); %rate and *averaging over all channels*
+            frm.thMax = max(frm.th);
+            frm.edges = edges;
         end
     end % methods
 end %class
