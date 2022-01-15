@@ -1,4 +1,4 @@
-classdef animatedPixelMaker < handle
+classdef timeVaryingHeatmap < handle
     properties
         pixels
         pixelsNRow
@@ -10,7 +10,7 @@ classdef animatedPixelMaker < handle
     end
     
     methods
-        function apm = animatedPixelMaker(nRow, nCol)
+        function apm = timeVaryingHeatmap(nRow, nCol)
            
             %initialize properties
            apm.pixels = cell(nRow, nCol);
@@ -23,7 +23,7 @@ classdef animatedPixelMaker < handle
         end
         
         function addPixel(apm, rowNum, colNum, varargin)
-            fprintf("\n In the (%d, %d)th pixel,\n", rowNum, colNum)
+            fprintf("\n In the (%d, %d)th slot,\n", rowNum, colNum)
             fireRateMakerNow = fireRateMaker();
             for i = 1:(length(varargin))
                 channelObjectNow = varargin{i};
@@ -44,6 +44,8 @@ classdef animatedPixelMaker < handle
         function detectSpikes(apm, thres, preTime, postTime) 
             for i = 1 : apm.pixelsNRow
                 for j = 1 : apm.pixelsNCol
+                                fprintf("\n In the (%d, %d)th slot,\n", i, j)
+
                     apm.pixels{i,j}.detectSpikes(thres, preTime, postTime);
                 end % j loop
             end % i loop
@@ -113,7 +115,7 @@ classdef animatedPixelMaker < handle
         end
         
             
-        function makeAnimatedPixels(apm, colormap)
+        function makeTimeVaryingHeatmap(apm, colormap)
             thMax = 0;
             for i = 1:apm.timeLength
                 matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);
@@ -132,15 +134,16 @@ classdef animatedPixelMaker < handle
             
             figure;
             for i = 1:apm.timeLength
+                 %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
                 heatmap(apm.matrices{i}, 'ColorLimits',[0 thMax], 'Colormap', colormap);
                 drawnow;
             end
             
             
             
-        end% makeAnimatedPixels(apm, colormap)
+        end
         
-        function RecordAnimatedPixels(apm, colormap, filename, framerate )
+        function recordTimeVaryingHeatmap(apm, colormap, filename, framerate )
             thMax = 0;
             for i = 1:apm.timeLength
                 matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);
@@ -159,6 +162,7 @@ classdef animatedPixelMaker < handle
             
             figure;
             for i = 1:apm.timeLength
+                %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
                 heatmap(apm.matrices{i}, 'ColorLimits',[0 thMax], 'Colormap', colormap);
                 F(i) = getframe(gcf);
             end
@@ -173,7 +177,7 @@ classdef animatedPixelMaker < handle
             
             
             
-        end% makeAnimatedPixels(apm, colormap)
+        end
     
             
             

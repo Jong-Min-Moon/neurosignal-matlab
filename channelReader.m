@@ -26,7 +26,7 @@ classdef channelReader < handle
         function readMultiChannelFile(chReader, filename)
             %1_singleunit wave.xlsx 또는 전체.xlsx 파일과 똑같은 포맷을 가정
             %80mb짜리 파일 기준으로 코어 i7 2.3GHz에서 데이터 로드에 1분 이상 소요
-            data = readmatrix(filename, NumHeaderLines = 6);  %데이터가 7번째 줄부터 시작하므로, 위에서부터 6줄은 버리고 데이터 로드 
+            data = readmatrix(filename, NumHeaderLines = 6);  %데이터가 *7*번째 줄부터 시작하므로, 위에서부터 *6*줄은 버리고 데이터 로드 
             channelRows = data(:,1);  %파일에 있는 채널 목록을 확인 
 
             chReader.massiveData = data;
@@ -83,7 +83,7 @@ classdef channelReader < handle
             % time data가 없는 signal data를 불러오는 함수
             % retina project(Won Gi Chung)의 data1.csv와 동일한 포맷의 파일에서 필요한 정보를 뽑아내어 
             % channel_from_data 클래스 생성자에 넘겨주어 obejct를 생성
-            x = readmatrix(filename, NumHeaderLines = 7);  %데이터가 8번째 줄부터 시작하므로, 위에서부터 7줄은 버리고 데이터 로드
+            x = readmatrix(filename, NumHeaderLines = 7);  %데이터가 *8*번째 줄부터 시작하므로, 위에서부터 *7*줄은 버리고 데이터 로드
             
             % Data 1.csv, Data 2.csv 모두 마지막 열 옆에 공백문자만으로 이루어진 열이 하나 더 있어서,
             % matalb에서 NaNd으로 읽힘. 그것을 제거.
