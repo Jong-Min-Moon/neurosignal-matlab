@@ -95,6 +95,23 @@ classdef channelReader < handle
             channelObject = channel(xVector, tVector, sampleRate, organoidNum, channelNum, month);    
         end % end of readRetinaWithoutTime
         
+        
+        function channelObject = readVerticalWithoutTime(chReader, filename, sampleRate, organoidNum, channelNum, month)
+            % time data가 없는 signal data를 불러오는 함수
+            % 데이터가 가로로 뻗지 않고 세로로만 뻗어 있는 경우 
+            % channel_from_data 클래스 생성자에 넘겨주어 obejct를 생성
+            x = readmatrix(filename);  
+            x = x(:,2);
+            % Data 1.csv, Data 2.csv 모두 마지막 열 옆에 공백문자만으로 이루어진 열이 하나 더 있어서,
+            % matalb에서 NaNd으로 읽힘. 그것을 제거.
+            xVector = chReader.checkNanCol(x);
+                        
+            tVector = chReader.makeTimeVariable(numel(xVector), sampleRate);
+          
+            channelObject = channel(xVector, tVector, sampleRate, organoidNum, channelNum, month);    
+        end % end of readRetinaWithoutTime
+        
+        
               
         function t = makeTimeVariable(chReader, nTotalObs, sampleRate)
             tDuration = (nTotalObs / sampleRate); %첫 측정치 timepoint에서 마지막 측정치 timepoint까지의 time interval
