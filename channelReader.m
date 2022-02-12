@@ -25,13 +25,14 @@ classdef channelReader < handle
             %   7. channelNum : 관리를 위한 channel number. 데이터 변환에 사용되지는 않음.
             %   8. month : 관리를 위한 month number. 데이터 변환에 사용되지는 않음.
            
-            x = readmatrix(filename,  NumHeaderLines = startRowIdx-1 ) %startRowIdx-1번째 row까지는 지우고 불러
+            x = readmatrix(filename,  range = [startRowIdx startColIdx] );
             if timeColumnIdx > 0 %time variable이 있는 경우 
-                binTimeStart = x(:,timeColumnIdx);  % 시간을 나타내는 열을 따로 저장 
-                % binTimeStart = table2array(binTimeStart)
+                binTimeStart = readmatrix(filename,  range = [startRowIdx timeColumnIdx] ); %time이 첫 번째 column이 되도록 데이터를 불러온 후  
+                binTimeStart = binTimeStart(:, 1); % 
+                % 시간을 나타내는 열을 따로 저장 
+                
             end
             
-            x = x(:,startColIdx:end) % startColIdx번째 열부터 데이터로 저장 
             x = chReader.checkNanCol(x); % NaN column check
             
             % make xVector and tVector
@@ -50,28 +51,26 @@ classdef channelReader < handle
         end
                       
         
-        function readMultiChannelFile(chReader, filename, timeColumnIdx, channelColumnIdx, startRowIdx, startColIdx, sampleRate)
+        function readMultiChannelFile(chReader, filename, channelColumnIdx, timeColumnIdx, startRowIdx, startColIdx, sampleRate)
             % inputs:
             %   1. filename: 파일 경로 입력
-            %   2. timeColumnIdx: 각 row의 시작시간이 기록되어 있는 column의 번호. 시간이 기록되어 있지
+            %   2. channelColumnIdx: channel 번호가 기록되어 있는 column의 번호.
+            %                        multichannel file이므로 무조건 channel column은 존재해야 함.
+            %   3. timeColumnIdx: 각 row의 시작시간이 기록되어 있는 column의 번호. 시간이 기록되어 있지
             %                    않으면 0으로 입력
-            %   3. channelColumnIdx: channel 번호가 기록되어 있는 column의 번호.
-            %                        multichannel file이므로 무조건 channel column은 존재해야 함. 
             %                        
             %   4. 
             %
             
-            data = readmatrix(filename, NumHeaderLines = startRowIdx-1);  %데이터가 *startRowIdx*번째 줄부터 시작하므로, 위에서부터 *startRowIdx-1*줄은 버리고 데이터 로드 
-            chReader.massiveDataChannelRows = data(:,channelColumnIdx);  %파일에 있는 채널 목록을 따로 저장. multichannel이므로 channel column은 무조건 존재.
+            chReader.massiveData = readmatrix(filename, range = [startRowIdx channelColumnIdx]);
+            chReader.massiveDataChannelRows = chReader.massiveData(:,1); %채널 정보를 저장
             
-            chReader.fileTimeColumnIdx = timeColumnIdx;
             if timeColumnIdx > 0 % 시간이 기록되어 있으면, 
-                chReader.fileBinTimeStart = data(:,timeColumnIdx); %시간 정보를 따로 저장
+                chReader.fileBinTimeStart = chReader.massiveData(:, timeColumnIdx- channelColumnIdx + 1) %시간 정보를 따로 저장
             end
             
-            chReader.massiveData = data(:,startColIdx:end); % startColIdx번째 열부터 데이터로 저장
-            
-            
+            chReader.massiveData = chReader.massiveData(:, (startColIdx - channelColumnIdx + 1):end )
+            chReader.fileTimeColumnIdx = timeColumnIdx;
             chReader.fileSampleRate = sampleRate;
         end
  
@@ -81,12 +80,13 @@ classdef channelReader < handle
         function channelObject = readSingleChannelFromFile(chReader, organoidNum, channelNum, month)
             channelBoolean = chReader.massiveDataChannelRows == channelNum; %channel num에 해당하는 row만 골라냄 
             channelData = chReader.massiveData(channelBoolean,:); % 그 boolean을 datatset에 적용 
+            channelBinTimeStart = chReader.fileBinTimeStart(channelBoolean,:);
             x = chReader.checkNanCol(channelData); % NaN column check
             
             % make xVector and tVector
             if chReader.fileTimeColumnIdx > 0
                 [xVector, nObsPerRow] = chReader.vectorizeX(x);
-                [tVector, sampleRateUsed] = chReader.vectorizeT(chReader.fileBinTimeStart, nObsPerRow, numel(xVector));
+                [tVector, sampleRateUsed] = chReader.vectorizeT(channelBinTimeStart, nObsPerRow, numel(xVector));
             else
                 sampleRateUsed = ch.fileSampleRate;
                 [xVector, ~] = chReader.vectorizeX(x);
@@ -101,7 +101,13 @@ classdef channelReader < handle
         
         
         
-     
+        function channelObjects = readManyChannelsFromFile(chReader, organoidNum, channelNums, month)
+            channelObjects = {};
+            for channelNum = channelNums
+                channelObjects{channelNum} = chReader.LEGACY_readSingleChannelFromFile(organoidNum, channelNum, month);
+            end % for loop
+            
+        end % function readAllChannelsFromFile
    
         
         
@@ -243,7 +249,7 @@ classdef channelReader < handle
         function channelObjects = LEGACY_readManyChannelsFromFile(chReader, organoidNum, channelNums, month)
             channelObjects = {};
             for channelNum = channelNums
-                channelObjects{channelNum} = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
+                channelObjects{channelNum} = chReader.LEGACY_readSingleChannelFromFile(organoidNum, channelNum, month);
             end % for loop
             
         end % function readAllChannelsFromFile
