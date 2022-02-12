@@ -58,18 +58,20 @@ classdef channelReader < handle
             %                        multichannel file이므로 무조건 channel column은 존재해야 함.
             %   3. timeColumnIdx: 각 row의 시작시간이 기록되어 있는 column의 번호. 시간이 기록되어 있지
             %                    않으면 0으로 입력
-            %                        
-            %   4. 
-            %
+            %   4. startRowIdx: 관측치 기록이 시작되는 row number                  
+            %   4. startColIdx: 관측치 기록이 시작되는 column number
+            %   5. sampleRate: sampling frequency.시간이 기록되어 있는 파일의 경우 이 값은 사용되지
+            %                 않음
+           
             
             chReader.massiveData = readmatrix(filename, range = [startRowIdx channelColumnIdx]);
             chReader.massiveDataChannelRows = chReader.massiveData(:,1); %채널 정보를 저장
             
             if timeColumnIdx > 0 % 시간이 기록되어 있으면, 
-                chReader.fileBinTimeStart = chReader.massiveData(:, timeColumnIdx- channelColumnIdx + 1) %시간 정보를 따로 저장
+                chReader.fileBinTimeStart = chReader.massiveData(:, timeColumnIdx- channelColumnIdx + 1); %시간 정보를 따로 저장
             end
             
-            chReader.massiveData = chReader.massiveData(:, (startColIdx - channelColumnIdx + 1):end )
+            chReader.massiveData = chReader.massiveData(:, (startColIdx - channelColumnIdx + 1):end );
             chReader.fileTimeColumnIdx = timeColumnIdx;
             chReader.fileSampleRate = sampleRate;
         end
@@ -101,10 +103,10 @@ classdef channelReader < handle
         
         
         
-        function channelObjects = readManyChannelsFromFile(chReader, organoidNum, channelNums, month)
+        function channelObjects = readManyChannelsFromFile(chReader, organoidNum, channelNums,  month)
             channelObjects = {};
             for channelNum = channelNums
-                channelObjects{channelNum} = chReader.LEGACY_readSingleChannelFromFile(organoidNum, channelNum, month);
+                channelObjects{channelNum} = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
             end % for loop
             
         end % function readAllChannelsFromFile
@@ -206,107 +208,7 @@ classdef channelReader < handle
         end
         
    
-        function channelObject = LEGACY_readBrainSingleChannel(chReader, filename, organoidNum, channelNum, month)
-            % MEA data.xlsx와 동일한 포맷의 파일에서 필요한 signal data를 불러오는 함수 
-            x = readmatrix(filename);
-            binTimeStart = x(:,5);  %시간을 나타내는 첫 번째 열을 따로 저장 
-            x = x(:,6:end); %6번째 열부터 데이터로 저장 
-            x = chReader.checkNanCol(x); %NaN column check
-            [xVector, nObsPerRow] = chReader.vectorizeX(x);
-            [tVector, sampleRate] = chReader.vectorizeT(binTimeStart, nObsPerRow, numel(xVector));
-            [xResampled, tResampled] = resample(xVector, tVector, sampleRate, 'spline'); %resample 및 interpolation 실행
-
-            
-            channelObject = channel(xResampled, tResampled, sampleRate, organoidNum, channelNum, month); 
-        end
-        
-        function LEGACY_readMultiChannelFile(chReader, filename)
-            %1_singleunit wave.xlsx 또는 전체.xlsx 파일과 똑같은 포맷을 가정
-            %80mb짜리 파일 기준으로 코어 i7 2.3GHz에서 데이터 로드에 1분 이상 소요
-            data = readmatrix(filename, NumHeaderLines = 6);  %데이터가 *7*번째 줄부터 시작하므로, 위에서부터 *6*줄은 버리고 데이터 로드 
-            channelRows = data(:,1);  %파일에 있는 채널 목록을 확인 
-
-            chReader.massiveData = data;
-            chReader.massiveDataChannelRows = channelRows;
-        end
-        
-        
-        function channelObject = LEGACY_readSingleChannelFromFile(chReader, organoidNum, channelNum, month)
-            channelBoolean = chReader.massiveDataChannelRows == channelNum; %channel num에 해당하는 row만 골라냄 
-            channelData = chReader.massiveData(channelBoolean,:); % 그 boolean을 datatset에 적용 
-
-            binTimeStart = channelData(:,3); %시간변수 
-            x = channelData(:, 4:end); % 관측값 
-            
-            x = chReader.checkNanCol(x); %NaN column check
-            [xVector, nObsPerRow] = chReader.vectorizeX(x);
-            [tVector, sampleRate] = chReader.vectorizeT(binTimeStart, nObsPerRow, numel(xVector));
-            [xResampled, tResampled] = resample(xVector, tVector, sampleRate, 'spline'); %resample 및 interpolation 실행
-
-            channelObject = channel(xResampled, tResampled, sampleRate, organoidNum, channelNum, month); 
-        end % function readSingleChannelFromFile
-        
-        function channelObjects = LEGACY_readManyChannelsFromFile(chReader, organoidNum, channelNums, month)
-            channelObjects = {};
-            for channelNum = channelNums
-                channelObjects{channelNum} = chReader.LEGACY_readSingleChannelFromFile(organoidNum, channelNum, month);
-            end % for loop
-            
-        end % function readAllChannelsFromFile
-        
-        
-        function channelObject = LEGACY_readRetinaWithTime(chReader, filename, organoidNum, channelNum, month)
-            % time data가 없는 signal data를 불러오는 함수
-            % retina project(Won Gi Chung)의 data1.csv와 동일한 포맷의 파일에서 필요한 정보를 뽑아내어 
-            % channel_from_data 클래스 생성자에 넘겨주어 obejct를 생성
-            x = readmatrix(filename, NumHeaderLines = 7);  %데이터가 8번째 줄부터 시작하므로, 위에서부터 7줄은 버리고 데이터 로드
-            binTimeStart = x(:,1);  %시간을 나타내는 첫 번째 열을 따로 저장 
-            x(:,1) = []; %시간 변수 지우고 측정값만 남김
-            
-            % Data 1.csv, Data 2.csv 모두 마지막 열 옆에 공백문자만으로 이루어진 열이 하나 더 있어서,
-            % matalb에서 NaN으로 읽힘. 그것을 제거.
-            x = chReader.checkNanCol(x);
-            
-            
-            [xVector, nObsPerRow] = chReader.vectorizeX(x);
-            [tVector, sampleRate] = chReader.vectorizeT(binTimeStart, nObsPerRow, numel(xVector));           
-            [xResampled, tResampled] = resample(xVector, tVector, sampleRate, 'spline'); %resample 및 interpolation 실행
-          
-            channelObject = channel(xResampled, tResampled, sampleRate, organoidNum, channelNum, month);    
-        end  % end of readRetinaWithTime
-        
-        
-        function channelObject = LEGACY_readRetinaWithoutTime(chReader, filename, sampleRate, organoidNum, channelNum, month)
-            % time data가 없는 signal data를 불러오는 함수
-            % retina project(Won Gi Chung)의 data1.csv와 동일한 포맷의 파일에서 필요한 정보를 뽑아내어 
-            % channel_from_data 클래스 생성자에 넘겨주어 obejct를 생성
-            x = readmatrix(filename, NumHeaderLines = 7);  %데이터가 *8*번째 줄부터 시작하므로, 위에서부터 *7*줄은 버리고 데이터 로드
-            
-            % Data 1.csv, Data 2.csv 모두 마지막 열 옆에 공백문자만으로 이루어진 열이 하나 더 있어서,
-            % matalb에서 NaNd으로 읽힘. 그것을 제거.
-            x = chReader.checkNanCol(x);
-                        
-            [xVector, ~] = chReader.vectorizeX(x);
-            tVector = chReader.makeTimeVariable(numel(xVector), sampleRate);
-          
-            channelObject = channel(xVector, tVector, sampleRate, organoidNum, channelNum, month);    
-        end % end of readRetinaWithoutTime
-        
-        
-        function channelObject = LEGACY_readVerticalWithoutTime(chReader, filename, sampleRate, organoidNum, channelNum, month)
-            % time data가 없는 signal data를 불러오는 함수
-            % 데이터가 가로로 뻗지 않고 세로로만 뻗어 있는 경우 
-            % channel_from_data 클래스 생성자에 넘겨주어 obejct를 생성
-            x = readmatrix(filename);  
-            x = x(:,2);
-            % Data 1.csv, Data 2.csv 모두 마지막 열 옆에 공백문자만으로 이루어진 열이 하나 더 있어서,
-            % matalb에서 NaNd으로 읽힘. 그것을 제거.
-            xVector = chReader.checkNanCol(x);
-                        
-            tVector = chReader.makeTimeVariable(numel(xVector), sampleRate);
-          
-            channelObject = channel(xVector, tVector, sampleRate, organoidNum, channelNum, month);    
-        end % end of readRetinaWithoutTime
+  
         
 
     end %methods
