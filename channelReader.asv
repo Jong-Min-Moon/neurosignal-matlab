@@ -25,13 +25,13 @@ classdef channelReader < handle
             %   7. channelNum : 관리를 위한 channel number. 데이터 변환에 사용되지는 않음.
             %   8. month : 관리를 위한 month number. 데이터 변환에 사용되지는 않음.
            
-            x = readmatrix(filename,  NumHeaderLines = startRowIdx-1 ) %startRowIdx-1번째 row까지는 지우고 불러
+            x = readmatrix(filename,  NumHeaderLines = startRowIdx-1 ); %startRowIdx-1번째 row까지는 지우고 불러
             if timeColumnIdx > 0 %time variable이 있는 경우 
                 binTimeStart = x(:,timeColumnIdx);  % 시간을 나타내는 열을 따로 저장 
                 % binTimeStart = table2array(binTimeStart)
             end
             
-            x = x(:,startColIdx:end) % startColIdx번째 열부터 데이터로 저장 
+            x = x(:,startColIdx:end); % startColIdx번째 열부터 데이터로 저장 
             x = chReader.checkNanCol(x); % NaN column check
             
             % make xVector and tVector
@@ -83,26 +83,59 @@ classdef channelReader < handle
             channelData = chReader.massiveData(channelBoolean,:); % 그 boolean을 datatset에 적용 
             x = chReader.checkNanCol(channelData); % NaN column check
             
-            % make xVector and tVector
             if chReader.fileTimeColumnIdx > 0
+                
                 [xVector, nObsPerRow] = chReader.vectorizeX(x);
                 [tVector, sampleRateUsed] = chReader.vectorizeT(chReader.fileBinTimeStart, nObsPerRow, numel(xVector));
             else
                 sampleRateUsed = ch.fileSampleRate;
                 [xVector, ~] = chReader.vectorizeX(x);
                 tVector = chReader.makeTimeVariable(numel(xVector), sampleRateUsed);
-            end
             
             [xResampled, tResampled] = resample(xVector, tVector, sampleRateUsed, 'spline'); %resample 및 interpolation 실행
             channelObject = channel(xResampled, tResampled, sampleRateUsed, organoidNum, channelNum, month); 
-           
+            
+            
+            
+            
+
             
         end % function readSingleChannelFromFile
         
         
         
-     
+        
+         %Reference    
+        function channelObject = LEGACY_readSingleChannelFromFile(chReader, organoidNum, channelNum, month)
+            channelBoolean = chReader.massiveDataChannelRows == channelNum; %channel num에 해당하는 row만 골라냄 
+            channelData = chReader.massiveData(channelBoolean,:); % 그 boolean을 datatset에 적용 
+
+            binTimeStart = channelData(:,3); %시간변수 
+            x = channelData(:, 4:end); % 관측값 
+            
+            x = chReader.checkNanCol(x); %NaN column check
+            [xVector, nObsPerRow] = chReader.vectorizeX(x);
+            [tVector, sampleRate] = chReader.vectorizeT(binTimeStart, nObsPerRow, numel(xVector));
+            [xResampled, tResampled] = resample(xVector, tVector, sampleRate, 'spline'); %resample 및 interpolation 실행
+
+            channelObject = channel(xResampled, tResampled, sampleRate, organoidNum, channelNum, month); 
+        end % function readSingleChannelFromFile
+        
+        
+        
+        
    
+         % REFERENCE. DONE.
+        function LEGACY_readMultiChannelFile(chReader, filename)
+            %1_singleunit wave.xlsx 또는 전체.xlsx 파일과 똑같은 포맷을 가정
+            %80mb짜리 파일 기준으로 코어 i7 2.3GHz에서 데이터 로드에 1분 이상 소요
+            data = readmatrix(filename, NumHeaderLines = 6);  %데이터가 *7*번째 줄부터 시작하므로, 위에서부터 *6*줄은 버리고 데이터 로드 
+            channelRows = data(:,1);  %파일에 있는 채널 목록을 확인 
+
+            chReader.massiveData = data;
+            chReader.massiveDataChannelRows = channelRows;
+        end
+        
         
         
         
@@ -112,6 +145,13 @@ classdef channelReader < handle
         
         
         
+        function channelObjects = LEGACY_readManyChannelsFromFile(chReader, organoidNum, channelNums, month)
+            channelObjects = {};
+            for channelNum = channelNums
+                channelObjects{channelNum} = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
+            end % for loop
+            
+        end % function readAllChannelsFromFile
         
         
       
