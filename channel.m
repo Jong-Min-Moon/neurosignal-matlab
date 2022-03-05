@@ -165,8 +165,23 @@ classdef channel < handle
                     end
                 end
             end
+            
+            % 클러스터별 spike 개수를 사용자에게 출력해 주기
+            disp("number of spikes per cluster:")
+            for clusterNum = 1 : length(ch.nSpikesPerCluster)
+                fprintf("cluaster %d: %d \n", clusterNum, ch.nSpikesPerCluster(clusterNum))
+            end
+            
+            
             ch.calculateClusterMeanSpikes() %클러스터별로 meanSpike, S.D. 계산
-            ch.calculateISI() %클러스터별로 InterSpike Intervals 계산
+            
+            %클러스터별로 InterSpike Intervals 계산. 각 클러스터별로 spike가 두 개 이상이어야 함
+            if sum(ch.nSpikesPerCluster<=1) == 0
+                ch.calculateISI()
+            else
+                disp("mean spike와 sd는 계산되었으나, spike가 한 개 이하인 클러스터가 존재하므로 클러스터별 ISI를 계산할 수 없습니다. ISI를 계산하려면 seed number를 다르게 하거나, 클러스터 개수를 다르게 해야 합니다.")
+            end
+            
         end % end of getKmeansClusters
         
         function getThetas(ch)%(*)
