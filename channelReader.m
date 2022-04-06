@@ -67,6 +67,8 @@ classdef channelReader < handle
             chReader.massiveData = readmatrix(filename, range = [startRowIdx channelColumnIdx]);
             chReader.massiveDataChannelRows = chReader.massiveData(:,1); %채널 정보를 저장
             
+            fprintf("This file has %d channels: ", length(unique(chReader.massiveDataChannelRows)))
+            unique(transpose(chReader.massiveDataChannelRows))
             if timeColumnIdx > 0 % 시간이 기록되어 있으면, 
                 chReader.fileBinTimeStart = chReader.massiveData(:, timeColumnIdx- channelColumnIdx + 1); %시간 정보를 따로 저장
             end
