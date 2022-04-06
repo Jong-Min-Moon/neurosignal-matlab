@@ -68,11 +68,41 @@ classdef channel < handle
             ch.clusterColors = ["red", "green", "blue", "magenta", "cyan", "yellow"]';
             
             % provide essential information to the user
-            fprintf("sampling rate = %fHz\n", ch.sf,2)
+            fprintf("sampling rate = %fHz\n", ch.sf)
             fprintf("starts at %f, ends at %f, duration = %f\n", ch.startTime, ch.endTimeApprox, ch.durationApprox)
-            
+            fprintf("number of timestamps = %d", ch.nTimestamps)
         end
         
+        function cutTime(ch, timeInterval)
+            startTime = timeInterval(1);
+            endTime = timeInterval(2);
+            
+            % deal with edge cases
+            if startTime < ch.startTime
+                fprintf("Start time is earlier than the channel's first timestamp")
+                return
+            end
+            
+            if endTime > ch.endTimeApprox
+                fprintf("End time is later than the channel's last timestamp")
+                return 
+            end
+            
+            startDiff = startTime - ch.startTime;
+            timestampStart = floor( (startDiff / (ch.msPerTs/1000) )) + 1;
+            
+            endDiff = ch.endTimeApprox - endTime;
+            timestampEnd = length(ch.t) - floor( (endDiff / (ch.msPerTs/1000)) );
+            
+            
+            ch.t = ch.t(timestampStart : timestampEnd);
+            ch.raw = ch.raw(timestampStart : timestampEnd);
+            ch.nTimestamps = length(ch.t);
+            
+            ch.startTime = ch.t(1);
+            ch.endTimeApprox = ch.t(end);
+            ch.durationApprox = ch.t(end) - ch.t(1);
+        end
         
     
         function bandPass(ch, passBand)%(*)
