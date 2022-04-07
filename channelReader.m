@@ -107,12 +107,15 @@ classdef channelReader < handle
         
         
         
-        function channelObjects = readManyChannelsFromFile(chReader, organoidNum, month)
+        function channelDict = readManyChannelsFromFile(chReader, organoidNum, month)
+            fprintf("Reading %d channels at once...\n\n", length(chReader.channelList))
             channelObjects = {};
-            for channelNum =  chReader.channelList
-                channelObjects{channelNum} = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
+            for i = 1:length(chReader.channelList)
+                channelNum = chReader.channelList(i);
+                channelObjects{i} = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
             end % for loop
-            
+            channelDict = containers.Map(chReader.channelList, channelObjects);
+
         end % function readAllChannelsFromFile
    
         

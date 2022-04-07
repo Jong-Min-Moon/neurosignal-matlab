@@ -50,6 +50,9 @@ classdef channel < handle
         signalFilteredRectified
         signalRawEnveloped
         signalFilteredEnveloped
+        
+        signalRawEnvelopedMax
+        signalFilteredEnvelopedMax
     end
     
     methods
@@ -75,9 +78,10 @@ classdef channel < handle
             ch.clusterColors = ["red", "green", "blue", "magenta", "cyan", "yellow"]';
             
             % provide essential information to the user
+            fprintf("channel number = %d\n", ch.channelNum)
             fprintf("sampling rate = %fHz\n", ch.sf)
             fprintf("starts at %f, ends at %f, duration = %f\n", ch.startTime, ch.endTimeApprox, ch.durationApprox)
-            fprintf("number of timestamps = %d", ch.nTimestamps)
+            fprintf("number of timestamps = %d\n\n", ch.nTimestamps)
         end
         
         function cutTime(ch, timeInterval)
@@ -135,6 +139,8 @@ classdef channel < handle
             else
                 [ch.signalRawEnveloped, lo] = envelope(ch.signalRawRectified, windowSize, "rms");
                 [ch.signalFilteredEnveloped, lo] = envelope(ch.signalFilteredRectified, windowSize, "rms");
+                ch.signalRawEnvelopedMax = max(ch.signalRawEnveloped)
+                ch.signalFilteredEnvelopedMax = max(ch.signalFilteredEnveloped)
             end
         end
         
