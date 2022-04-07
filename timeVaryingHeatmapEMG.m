@@ -16,15 +16,23 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
             apm.pixels{rowNum, colNum} = channelObject;
         end
         
+        %% filters
         function bandPass(apm, bandRange)
             for i = 1 : apm.pixelsNRow
                 for j = 1 : apm.pixelsNCol
                     apm.pixels{i,j}.bandPass(bandRange);
                 end
             end
-        end %applyBandPathFilter
+        end 
         
-        
+        function highPassButterworth(apm, order, cutoff)
+            %cutoff of high-pass filter = lower bound
+            for i = 1 : apm.pixelsNRow
+                for j = 1 : apm.pixelsNCol
+                    apm.pixels{i,j}.highPassButterworth(order, cutoff);
+                end
+            end
+        end 
            
         function cutTime(apm, timeInterval)
             cutStart = timeInterval(1);

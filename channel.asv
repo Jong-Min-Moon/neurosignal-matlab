@@ -162,12 +162,13 @@ classdef channel < handle
         end
         
         function notchButterworth(ch, order, notch)
-            Fn = (ch.sf/2); % Nyquist frequency
-            ftype = 'stop';
-            [b, a] = butter(order, notch/Fn, ftype);
-            ch.filtered = filter(b,a,ch.filtered); 
-        end
-        
+            Fn=(ch.sf/2); % Nyquist frequency
+            ftype='stop';
+
+[b, a]=butter(order, notch/Fn, ftype);
+
+ch.filtered = filter(b,a,ch.filtered); 
+
         function detectSpikes(ch, thres, preTime, postTime)
             % from CyborgBrainOrg.m
             
