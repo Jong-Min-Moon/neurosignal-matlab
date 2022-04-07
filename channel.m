@@ -43,6 +43,13 @@ classdef channel < handle
         clusterColors
 
         bursts
+        
+        
+        %EMG data analysis
+        signalRawRectified
+        signalFilteredRectified
+        signalRawEnveloped
+        signalFilteredEnveloped
     end
     
     methods
@@ -94,15 +101,43 @@ classdef channel < handle
             endDiff = ch.endTimeApprox - endTime;
             timestampEnd = length(ch.t) - floor( (endDiff / (ch.msPerTs/1000)) );
             
-            
+            % t
             ch.t = ch.t(timestampStart : timestampEnd);
-            ch.raw = ch.raw(timestampStart : timestampEnd);
             ch.nTimestamps = length(ch.t);
             
             ch.startTime = ch.t(1);
             ch.endTimeApprox = ch.t(end);
             ch.durationApprox = ch.t(end) - ch.t(1);
+            
+            % raw
+            ch.raw = ch.raw(timestampStart : timestampEnd);
+            
+            % filtered
+            if length(ch.filtered) >= 1
+                ch.filtered = ch.filtered(timestampStart : timestampEnd);
+            end        
+                        
+            %display info to the user
+            fprintf("new startTime = %f\n", ch.startTime)
+            fprintf("new endTime = %f\n", ch.endTimeApprox)
+            fprintf("new duration = %f\n", ch.durationApprox)
+            fprintf("new nTimestamp = %d\n", ch.nTimestamps)
         end
+        
+        function rectify(ch)
+            ch.signalRawRectified = abs(ch.raw);
+            ch.signalFilteredRectified = abs(ch.filtered);
+        end
+        
+        function envelope(ch, windowSize)
+            if length(ch.signalRawRectified) < 1
+                error("signal not rectified. Rectify first.")
+            else
+                [ch.signalRawEnveloped, lo] = envelope(ch.signalRawRectified, windowSize, "rms");
+                [ch.signalFilteredEnveloped, lo] = envelope(ch.signalFilteredRectified, windowSize, "rms");
+            end
+        end
+        
         
     
         function bandPass(ch, passBand)%(*)
