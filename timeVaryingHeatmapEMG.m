@@ -141,7 +141,7 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
             msPerTs = apm.pixels{1,1}.msPerTs;
             nTimestamps = apm.pixels{1,1}.nTimestamps;
             stepSize = round(timeInterval / msPerTs);
-            nSteps = nTimestamps/stepSize;
+            nSteps = fix(nTimestamps/stepSize);
             
             % print info for the user
             fprintf("step size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
@@ -153,13 +153,13 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
             
             for i = 1:nSteps % loop over each step
                 matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);%initialize a matrix for this step
-                
+                timestampNow = 1 + (i-1)*stepSize;
                 for j = 1 : apm.pixelsNRow % loop over 
                     for k = 1 : apm.pixelsNCol
                         if filtered
-                            envelopeValueNow = apm.pixels{j,k}.signalFilteredEnveloped(i);
+                            envelopeValueNow = apm.pixels{j,k}.signalFilteredEnveloped(timestampNow);
                         else
-                            envelopeValueNow = apm.pixels{j,k}.signalRawEnveloped(i);
+                            envelopeValueNow = apm.pixels{j,k}.signalRawEnveloped(timestampNow);
                         end
                         matrixNow(j, k) = envelopeValueNow;
                     end % loop over columns
