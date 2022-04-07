@@ -139,8 +139,8 @@ classdef channel < handle
             else
                 [ch.signalRawEnveloped, lo] = envelope(ch.signalRawRectified, windowSize, "rms");
                 [ch.signalFilteredEnveloped, lo] = envelope(ch.signalFilteredRectified, windowSize, "rms");
-                ch.signalRawEnvelopedMax = max(ch.signalRawEnveloped)
-                ch.signalFilteredEnvelopedMax = max(ch.signalFilteredEnveloped)
+                ch.signalRawEnvelopedMax = max(ch.signalRawEnveloped);
+                ch.signalFilteredEnvelopedMax = max(ch.signalFilteredEnveloped);
             end
         end
         

@@ -2,10 +2,11 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
     properties
         maxSignalFiltered
         maxSignalRaw
+    end
     
     methods
         function apm = timeVaryingHeatmapEMG(nRow, nCol)
-           apm@timeVaryingHeatmap(nRow, nCol) %explicitly call the constructor of the superclass       
+           apm@timeVaryingHeatmap(nRow, nCol); %explicitly call the constructor of the superclass       
         end
         
         
@@ -15,7 +16,7 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
             apm.pixels{rowNum, colNum} = channelObject;
         end
         
-        function applyBandPassFilter(apm, bandRange)
+        function bandPass(apm, bandRange)
             for i = 1 : apm.pixelsNRow
                 for j = 1 : apm.pixelsNCol
                     apm.pixels{i,j}.bandPass(bandRange);
@@ -96,7 +97,7 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
         function rectify(apm)
           for i = 1 : apm.pixelsNRow
                 for j = 1 : apm.pixelsNCol
-                    apm.pixels{i,j}.rectify()
+                    apm.pixels{i,j}.rectify();
                 end
           end 
         end
@@ -104,7 +105,7 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
         function envelope(apm, windowSize)
           for i = 1 : apm.pixelsNRow
                 for j = 1 : apm.pixelsNCol
-                    apm.pixels{i,j}.envelope(windowSize)
+                    apm.pixels{i,j}.envelope(windowSize);
                 end
           end
           
@@ -137,10 +138,10 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
             
             
         function makeTimeVaryingHeatmap(apm, timeInterval, filtered, colormap)
-            msPerTs = apm.pixels{1,1}.msPerTs
-            nTimestamps = apm.pixels{1,1}.nTimestamps
-            stepSize = round(timeInterval / msPerTs)
-            nSteps = nTimestamps/stepSize
+            msPerTs = apm.pixels{1,1}.msPerTs;
+            nTimestamps = apm.pixels{1,1}.nTimestamps;
+            stepSize = round(timeInterval / msPerTs);
+            nSteps = nTimestamps/stepSize;
             
             % print info for the user
             fprintf("step size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
@@ -174,8 +175,7 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
             else
                 maxSignal = apm.maxSignalRaw;
             end
-            
-                
+               
             
             fprintf("max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
                         
