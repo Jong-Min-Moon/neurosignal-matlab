@@ -33,7 +33,35 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
                 end
             end
         end 
-           
+        
+        function notchButterworth(apm, order, notch)
+            %cutoff of high-pass filter = lower bound
+            for i = 1 : apm.pixelsNRow
+                for j = 1 : apm.pixelsNCol
+                    apm.pixels{i,j}.notchButterworth(order, notch);
+                end
+            end
+        end
+        
+        function normalizeEnvelope(apm, maxEnvValue)
+            for i = 1 : apm.pixelsNRow
+                for j = 1 : apm.pixelsNCol
+                    apm.pixels{i,j}.normalizeEnvelope(maxEnvValue);
+                end
+            end
+        end
+        %%
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        %%
         function cutTime(apm, timeInterval)
             cutStart = timeInterval(1);
             cutEnd = timeInterval(2);

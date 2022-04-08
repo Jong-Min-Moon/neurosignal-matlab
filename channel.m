@@ -168,6 +168,13 @@ classdef channel < handle
             ch.filtered = filter(b,a,ch.filtered); 
         end
         
+        
+        % normalize
+        function normalizeEnvelope(ch, maxEnvValue)           
+            ch.signalRawEnveloped = ch.signalRawEnveloped * (maxEnvValue / ch.signalRawEnvelopedMax);
+            ch.signalFilteredEnveloped = ch.signalFilteredEnveloped * (maxEnvValue / ch.signalFilteredEnvelopedMax);
+        end
+            %%
         function detectSpikes(ch, thres, preTime, postTime)
             % from CyborgBrainOrg.m
             
@@ -194,6 +201,8 @@ classdef channel < handle
                     ii = ii + 1;
                 end
             end
+            
+            
             
             ch.nSpikes = length(ch.spikeTimestamps); %발견한 spike 개수 저장 
             fprintf('number of spikes found : %d\n', ch.nSpikes);

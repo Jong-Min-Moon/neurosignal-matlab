@@ -1,0 +1,213 @@
+classdef networkAnalyzer < handle
+    properties
+       spikeTrains
+       channels
+       channelList
+    end
+    
+    methods
+        function na = networkAnalyzer()
+        
+        end
+        
+        
+        function addChannels(na, reader)
+            na.channels = reader.readManyChannelsFromFile(1, 1);
+            na.channelList = reader.channelList;
+        end
+        
+        function bandPass(na, bandRange)
+            for i = 1 : length(na.channelList)
+                channelNum = na.channelList(i);
+                channel = na.channels(channelNum);
+                channel.bandPass(bandRange);
+            end
+        end 
+        
+        function detectSpikes(na, thres, preTime, postTime)
+            for i = 1 : length(na.channelList)
+                channelNum = na.channelList(i);
+                channel = na.channels(channelNum);
+                channel.detectSpikes(thres, preTime, postTime);
+            end
+        end
+        
+        function dist = spikeDist(na)
+            dist = zeros(length(na.channelList));
+            for i = 1 : length(na.channelList)
+                for j = i+1 : length(na.channelList)                    
+                    channel_1 = na.channels(na.channelList(i));
+                    channel_2 = na.channels(na.channelList(j));
+                    nTimestamps = channel_1.nTimestamps;
+
+                    train_1 = channel_1.spikeTimestamps;
+                    train_2 = channel_2.spikeTimestamps;
+                    
+                    train_1 = py.numpy.array(train_1);
+                    train_2 = py.numpy.array(train_2);
+                    
+                    train_1 = py.pyspike.SpikeTrain(train_1, py.list([0, nTimestamps]));
+                    train_2 = py.pyspike.SpikeTrain(train_2, py.list([0, nTimestamps]));
+                    
+                    dist(i,j) = py.pyspike.spike_sync(train_1,train_2);
+                    dist(j,i) = py.pyspike.spike_sync(train_1,train_2);
+                end
+            end
+            
+            heatmap(dist, 'Colormap', cool);
+            ch.distMat = dist;
+                
+        end
+        
+%         function applyBandPassFilter(apm, bandRange)
+%             for i = 1 : apm.pixelsNRow
+%                 for j = 1 : apm.pixelsNCol
+%                     apm.pixels{i,j}.applyBandpassFilter(bandRange);
+%                 end
+%             end
+%         end %applyBandPathFilter
+%         
+%         
+%         function detectSpikes(apm, thres, preTime, postTime) 
+%             for i = 1 : apm.pixelsNRow
+%                 for j = 1 : apm.pixelsNCol
+%                                 fprintf("\n In the (%d, %d)th slot,\n", i, j)
+% 
+%                     apm.pixels{i,j}.detectSpikes(thres, preTime, postTime);
+%                 end % j loop
+%             end % i loop
+%         end % function detectSpikes
+%         
+%         
+%         function preProcess(apm, cutoffVal, binWidth)
+%             % first do the preprocessing
+%             % cutoff and setting startTime and endTime
+%             for i = 1 : apm.pixelsNRow
+%                 for j = 1 : apm.pixelsNCol
+%                    
+%                     apm.pixels{i,j}.processing(cutoffVal);
+%                 end
+%             end
+%             
+%             % take max and min of startTimes and endTimes pixels,
+%             % to create a single timerange
+%             apm.setEndTimeMin();
+%             apm.setStartTimeMax();
+%             
+%             if apm.startTimeMax >= apm.endTimeMin
+%                 disp("error: startTimeMax > endTimeMin")
+%                 return
+%             end
+%             % apply the single timerange to each pixel, and calculate
+%             % fireing rate
+%             for i = 1 : apm.pixelsNRow
+%                 for j = 1 : apm.pixelsNCol
+%                      
+%                     apm.pixels{i,j}.startTimeMax = apm.startTimeMax;
+%                     apm.pixels{i,j}.endTimeMin = apm.endTimeMin;
+%                     apm.pixels{i,j}.getFireRate(binWidth);
+%                 end
+%             end
+%             
+%             sampleTH  = apm.pixels{1,1}.th;
+%             apm.timeLength = length(sampleTH);
+%             apm.matrices = cell(1, apm.timeLength);
+%                  
+%         end
+%         
+%         function setEndTimeMin(apm) 
+%             minNow = apm.pixels{1,1}.endTimeMin;
+%             for i = 1 : apm.pixelsNRow
+%                 for j = 1 : apm.pixelsNCol    
+%                     valNow = apm.pixels{i,j}.endTimeMin;
+%                     if valNow < minNow
+%                         minNow = valNow;
+%                     end
+%                 end
+%             end
+%             apm.endTimeMin = minNow;
+%         end
+%         
+%         function setStartTimeMax(apm) %step 4
+%             maxNow = apm.pixels{1,1}.startTimeMax;
+%             for i = 1 : apm.pixelsNRow
+%                 for j = 1 : apm.pixelsNCol    
+%                     valNow = apm.pixels{i,j}.startTimeMax;
+%                     if valNow > maxNow
+%                         maxNow = valNow;
+%                     end
+%                 end
+%             end
+%             apm.startTimeMax = maxNow;
+%         end
+%         
+%             
+%         function makeTimeVaryingHeatmap(apm, colormap)
+%             thMax = 0;
+%             for i = 1:apm.timeLength
+%                 matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);
+%                 for j = 1 : apm.pixelsNRow
+%                     for k = 1 : apm.pixelsNCol
+%                         thNow = apm.pixels{j,k}.th;
+%                         matrixNow(j,k) = thNow(i) ;
+%                         
+%                         if apm.pixels{j,k}.thMax > thMax
+%                             thMax = apm.pixels{j,k}.thMax;
+%                         end % loop: get thMax over all pixel
+%                     end % k loop: over columns
+%                 end % l loop: over rows
+%                 apm.matrices{i} = matrixNow;
+%             end
+%             
+%             figure;
+%             for i = 1:apm.timeLength
+%                  %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
+%                 heatmap(apm.matrices{i}, 'ColorLimits',[0 thMax], 'Colormap', colormap);
+%                 drawnow;
+%             end
+%             
+%             
+%             
+%         end
+%         
+%         function recordTimeVaryingHeatmap(apm, colormap, filename, framerate )
+%             thMax = 0;
+%             for i = 1:apm.timeLength
+%                 matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);
+%                 for j = 1 : apm.pixelsNRow
+%                     for k = 1 : apm.pixelsNCol
+%                         thNow = apm.pixels{j,k}.th;
+%                         matrixNow(j,k) = thNow(i) ;
+%                         
+%                         if apm.pixels{j,k}.thMax > thMax
+%                             thMax = apm.pixels{j,k}.thMax;
+%                         end % loop: get thMax over all pixel
+%                     end % k loop: over columns
+%                 end % l loop: over rows
+%                 apm.matrices{i} = matrixNow;
+%             end
+%             
+%             figure;
+%             for i = 1:apm.timeLength
+%                 %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
+%                 heatmap(apm.matrices{i}, 'ColorLimits',[0 thMax], 'Colormap', colormap);
+%                 F(i) = getframe(gcf);
+%             end
+%             
+%             v = VideoWriter(filename, 'MPEG-4');
+%             v.FrameRate = framerate; %1초에 xframe. 총 100 frame이라면 100/x 초짜리가 될 것.
+%             v.Quality = 100;
+% 
+%             open(v);
+%             writeVideo(v, F);
+%             close(v);
+%             
+%             
+%             
+        
+    
+            
+            
+       
+    end % methods
+end %class
