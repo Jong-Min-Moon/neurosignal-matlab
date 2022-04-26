@@ -53,6 +53,8 @@ classdef channel < handle
         
         signalRawEnvelopedMax
         signalFilteredEnvelopedMax
+
+        rawBaselineFiltered
     end
     
     methods
@@ -85,28 +87,11 @@ classdef channel < handle
             fprintf("number of timestamps = %d\n\n", ch.nTimestamps)
         end
         
+
+      %% cutting
+
         function cutTime(ch, timeInterval)
-            %startTime = timeInterval(1);
-            %endTime = timeInterval(2);
             
-            % deal with edge cases
-            %if startTime < ch.startTime
-            %    fprintf("Start time is earlier than the channel's first timestamp")
-            %    return
-            %end
-            %
-            %if endTime > ch.endTimeApprox
-            %    fprintf("End time is later than the channel's last timestamp")
-            %    return 
-            %end
-            %
-            %startDiff = startTime - ch.startTime;
-            %timestampStart = floor( (startDiff / (ch.msPerTs/1000) )) + 1;
-            %
-            %endDiff = ch.endTimeApprox - endTime;
-            %timestampEnd = length(ch.t) - floor( (endDiff / (ch.msPerTs/1000)) );
-            %
-            % t
             [timestampStart, timestampEnd] = ch.getIntervalTimestamps(timeInterval)
             ch.t = ch.t(timestampStart : timestampEnd);
             ch.nTimestamps = length(ch.t);
@@ -170,30 +155,26 @@ classdef channel < handle
             timestampEnd = length(ch.t) - floor( (endDiff / (ch.msPerTs/1000)) );
         end
 
-%         function getBasedlineTimestamps(ch, baselineTimeIntervals)
-%         
-%         for i = 1 : length(baselineTimeIntervals)
-%         
-%         end
-%         
-%         
-%         end %end of method getBasedlineTimestamps
+        function timeStampIntervals = getBasedlineTimestamps(ch, baselineTimeIntervals)
+            timeStampIntervals = {};
+            for i = 1 : length(baselineTimeIntervals)
+                timeInterval = baselineTimeIntervals{i};
+                [timestampStart, timestampEnd] = ch.getIntervalTimestamps(timeInterval);
+                timeStampIntervals{i} = [timestampStart, timestampEnd];
+            end
+        end %end of method getBasedlineTimestamps
 
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        function filterBaseline(ch, baselineTimeIntervals, passBand)
+            timeStampIntervals = ch.getBasedlineTimestamps(baselineTimeIntervals);
+            baselineFiltered = bandpass(ch.raw, passBand, ch.sf);
+            ch.rawBaselineFiltered = ch.raw;
+            for i = 1 : length(timeStampIntervals)
+                intervalNow = timeStampIntervals{i};
+                startStamp = intervalNow(1);
+                endStamp = intervalNow(2);
+                ch.rawBaselineFiltered(startStamp : endStamp) = baselineFiltered(startStamp : endStamp);
+            end
+        end
         
         %% filters
         
@@ -219,8 +200,7 @@ classdef channel < handle
             ch.filtered = filter(b,a,ch.filtered); 
         end
         
-    
-        
+
         % normalize
         function normalizeEnvelope(ch, maxEnvValue)           
             ch.signalRawEnveloped = ch.signalRawEnveloped * (maxEnvValue / ch.signalRawEnvelopedMax);
