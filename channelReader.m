@@ -12,7 +12,34 @@ classdef channelReader < handle
         function chReader = channelReader()
         end
         
-        
+        function channelObject = readVerticalChannel(chReader, filename, timeColumnIdx, startRowIdx, startColIdx, sampleRate, organoidNum, channelNum, month)
+           
+           
+            x = readmatrix(filename);
+            if timeColumnIdx > 0 %time variable이 있는 경우 
+                binTimeStart = readmatrix(filename,  range = [startRowIdx timeColumnIdx] ); %time이 첫 번째 column이 되도록 데이터를 불러온 후  
+                binTimeStart = binTimeStart(:, 1); % 
+                % 시간을 나타내는 열을 따로 저장 
+                
+            end
+            
+            x = chReader.checkNanCol(x); % NaN column check
+            
+            % make xVector and tVector
+            if timeColumnIdx > 0
+                [xVector, nObsPerRow] = chReader.vectorizeX(x);
+                [tVector, sampleRateUsed] = chReader.vectorizeT(binTimeStart, nObsPerRow, numel(xVector));
+            else
+                sampleRateUsed = sampleRate;
+                [xVector, ~] = chReader.vectorizeX(x);
+                tVector = chReader.makeTimeVariable(numel(xVector), sampleRateUsed);
+            end
+                        
+            % common procedure
+            [xResampled, tResampled] = resample(xVector, tVector, sampleRateUsed, 'spline'); %resample 및 interpolation 실행
+            channelObject = channel(xResampled, tResampled, sampleRateUsed, organoidNum, channelNum, month);
+        end
+
         function channelObject = readSingleChannel(chReader, filename, timeColumnIdx, startRowIdx, startColIdx, sampleRate, organoidNum, channelNum, month)
             % inputs:
             %   1. filename: 파일 경로 입력

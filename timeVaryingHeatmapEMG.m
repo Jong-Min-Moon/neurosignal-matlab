@@ -218,8 +218,9 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
             figure;
             for i = 1:nSteps
                  %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-                heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap);
+                heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
                 drawnow;
+
             end
             
             
@@ -246,7 +247,7 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
             figure;
             for i = 1:apm.timeLength
                 %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-                heatmap(apm.matrices{i}, 'ColorLimits',[0 thMax], 'Colormap', colormap);
+                heatmap(apm.matrices{i}, 'ColorLimits',[0 thMax], 'Colormap', colormap, 'CellLabelColor','none' );
                 F(i) = getframe(gcf);
             end
             

@@ -94,20 +94,19 @@ classdef channel < handle
             %    fprintf("Start time is earlier than the channel's first timestamp")
             %    return
             %end
-            %
-            %if endTime > ch.endTimeApprox
-            %    fprintf("End time is later than the channel's last timestamp")
-            %    return 
-            %end
-            %
-            %startDiff = startTime - ch.startTime;
-            %timestampStart = floor( (startDiff / (ch.msPerTs/1000) )) + 1;
-            %
-            %endDiff = ch.endTimeApprox - endTime;
-            %timestampEnd = length(ch.t) - floor( (endDiff / (ch.msPerTs/1000)) );
-            %
+            
+            if endTime > ch.endTimeApprox
+                fprintf("End time is later than the channel's last timestamp")
+                return 
+            end
+            
+            startDiff = startTime - ch.startTime;
+            timestampStart = floor( (startDiff / (ch.msPerTs/1000) )) + 1;
+            
+            endDiff = ch.endTimeApprox - endTime;
+            timestampEnd = length(ch.t) - floor( (endDiff / (ch.msPerTs/1000)) );
+            
             % t
-            [timestampStart, timestampEnd] = ch.getIntervalTimestamps(timeInterval)
             ch.t = ch.t(timestampStart : timestampEnd);
             ch.nTimestamps = length(ch.t);
             
@@ -168,16 +167,16 @@ classdef channel < handle
             
             endDiff = ch.endTimeApprox - endTime;
             timestampEnd = length(ch.t) - floor( (endDiff / (ch.msPerTs/1000)) );
-        end
 
-%         function getBasedlineTimestamps(ch, baselineTimeIntervals)
-%         
-%         for i = 1 : length(baselineTimeIntervals)
-%         
-%         end
-%         
-%         
-%         end %end of method getBasedlineTimestamps
+
+        function getBasedlineTimestamps(ch, baselineTimeIntervals)
+        
+        for i = 1 : length(baselineTimeIntervals)
+        
+        end
+        
+        
+        end %end of method getBasedlineTimestamps
 
         
         
