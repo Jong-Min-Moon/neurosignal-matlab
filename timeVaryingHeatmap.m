@@ -22,6 +22,9 @@ classdef timeVaryingHeatmap < handle
        
         end
         
+        
+        
+        
         function addPixel(apm, rowNum, colNum, varargin)
             fprintf("\n In the (%d, %d)th slot,\n", rowNum, colNum)
             fireRateMakerNow = fireRateMaker();

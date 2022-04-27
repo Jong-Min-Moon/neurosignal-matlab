@@ -12,6 +12,7 @@ classdef channel < handle
         endTimeApprox
         durationApprox
         
+        originalTime
         t 
         raw
         
@@ -43,6 +44,44 @@ classdef channel < handle
         clusterColors
 
         bursts
+        
+        
+        %EMG data analysis
+        originalSignal
+        
+        
+        % baseline filterd
+        signalRawLowBaseline
+        signalRawNoBaseline
+        signalFilteredLowBaseline
+        signalFilteredNoBaseline
+        
+        % Rectified
+        rawRectified
+        filteredRectified
+        signalRawLowBaselineRectified
+        signalRawNoBaselineRectified
+        signalFilteredLowBaselineRectified
+        signalFilteredNoBaselineRectified
+        
+
+        % Enveloped
+        rawEnveloped
+        filteredEnveloped
+        signalRawLowBaselineEnveloped
+        signalRawNoBaselineEnveloped
+        signalFilteredLowBaselineEnveloped
+        signalFilteredNoBaselineEnveloped
+
+        % max values of enveloped
+        rawEnvelopedMax
+        filteredEnvelopedMax
+        signalRawLowBaselineEnvelopedMax
+        signalRawNoBaselineEnvelopedMax
+        signalFilteredLowBaselineEnvelopedMax
+        signalFilteredNoBaselineEnvelopedMax
+
+       
     end
     
     methods
@@ -57,23 +96,139 @@ classdef channel < handle
             ch.sf = sampleRate;
             ch.msPerTs = (1000 / sampleRate);
             
+            % t related
+            ch.originalTime = t;
             ch.t = t;
-            ch.raw = x;
             ch.nTimestamps = length(t);
-            
             ch.startTime = t(1);
             ch.endTimeApprox = t(end);
             ch.durationApprox = t(end) - t(1);
             
+            % signals
+            ch.originalSignal = x;
+            ch.raw = x;
+            ch.filtered = x; %일단 filtered에도 raw x를 저장해 놓음
+
+
+            
             ch.clusterColors = ["red", "green", "blue", "magenta", "cyan", "yellow"]';
             
             % provide essential information to the user
+            fprintf("channel number = %d\n", ch.channelNum)
             fprintf("sampling rate = %fHz\n", ch.sf)
             fprintf("starts at %f, ends at %f, duration = %f\n", ch.startTime, ch.endTimeApprox, ch.durationApprox)
-            fprintf("number of timestamps = %d", ch.nTimestamps)
+            fprintf("number of timestamps = %d\n\n", ch.nTimestamps)
         end
         
+
+     
+        %% Preprocessing for EMG
+            %% 1. cutting
+
         function cutTime(ch, timeInterval)
+            
+            [timestampStart, timestampEnd] = ch.getIntervalTimestamps(timeInterval);
+            ch.t = ch.t(timestampStart : timestampEnd);
+            ch.nTimestamps = length(ch.t);
+            
+            ch.startTime = ch.t(1);
+            ch.endTimeApprox = ch.t(end);
+            ch.durationApprox = ch.t(end) - ch.t(1);
+            
+
+            %raw와 filtered 모두 cut하고 각자 저장함
+            ch.raw = ch.originalSignal(timestampStart : timestampEnd);% raw
+            ch.filtered = ch.originalSignal(timestampStart : timestampEnd);% filtered
+                        
+            %display info to the user
+            fprintf("Reset all preprocessing of signals")
+            fprintf("new startTime = %f\n", ch.startTime)
+            fprintf("new endTime = %f\n", ch.endTimeApprox)
+            fprintf("new duration = %f\n", ch.durationApprox)
+            fprintf("new nTimestamp = %d\n", ch.nTimestamps)
+        end % end of function cutTime
+
+        %% 2. baseline filtering
+        function filterBaseline(ch, baselineTimeIntervals, passBand)
+            timeStampIntervals = ch.getMultipleIntervalTimestamps(baselineTimeIntervals);
+            replacement = bandpass(ch.raw, passBand, ch.sf);
+            ch.signalRawLowBaseline = ch.raw;
+            ch.signalRawNoBaseline = ch.raw;
+            for i = 1 : length(timeStampIntervals)
+                intervalNow = timeStampIntervals{i};
+                startStamp = intervalNow(1);
+                endStamp = intervalNow(2);
+                ch.signalRawLowBaseline(startStamp : endStamp) = replacement(startStamp : endStamp);
+                ch.signalRawNoBaseline(startStamp : endStamp) = 0;
+            end % end of for loop over timeStampIntervals
+            ch.signalFilteredLowBaseline = ch.signalRawLowBaseline; %copy
+            ch.signalFilteredNoBaseline = ch.signalRawNoBaseline; %copy
+        end  % end of method filterBaseline      
+
+        %% 3. signal filtering
+        
+        % bandpass filter
+        function bandPass(ch, passBand)%(*)
+            ch.filtered = bandpass(ch.filtered, passBand, ch.sf);
+        end
+        
+        % butterworth high-pass filter
+        function highPassButterworth(ch, order, cutoff)
+            %cutoff of high-pass filter = lower bound
+            Fn = (ch.sf/2); % Nyquist frequency
+            ftype = "high";
+            [b, a] = butter(order, cutoff/Fn, ftype);
+
+            ch.filtered = filter(b,a,ch.filtered);
+            ch.signalFilteredLowBaseline = filter(b,a,ch.signalFilteredLowBaseline);
+            ch.signalFilteredNoBaseline = filter(b,a,ch.signalFilteredNoBaseline);
+        
+        end
+        
+        function notchButterworth(ch, order, notch)
+            Fn = (ch.sf/2); % Nyquist frequency
+            ftype = 'stop';
+            [b, a] = butter(order, notch/Fn, ftype);
+
+            ch.filtered = filter(b,a,ch.filtered); 
+            ch.signalFilteredLowBaseline = filter(b,a,ch.signalFilteredLowBaseline);
+            ch.signalFilteredNoBaseline = filter(b,a,ch.signalFilteredNoBaseline);
+        end
+
+        %% 4. rectify
+        function rectify(ch)
+            ch.rawRectified                       = abs(ch.raw);
+            ch.filteredRectified                  = abs(ch.filtered);
+            ch.signalRawLowBaselineRectified      = abs(ch.signalRawLowBaseline);
+            ch.signalRawNoBaselineRectified       = abs(ch.signalRawNoBaseline);
+            ch.signalFilteredLowBaselineRectified = abs(ch.signalFilteredLowBaseline);
+            ch.signalFilteredNoBaselineRectified  = abs(ch.signalFilteredNoBaseline);
+        end
+        
+        
+        
+        function envelope(ch, paramter, method)
+            %enveloping
+            [ch.rawEnveloped, lo]                       = envelope(ch.rawRectified, paramter, method);
+            [ch.filteredEnveloped, lo]                  = envelope(ch.filteredRectified, paramter, method);
+            [ch.signalRawLowBaselineEnveloped, lo]      = envelope(ch.signalRawLowBaselineRectified, paramter, method);
+            [ch.signalRawNoBaselineEnveloped, lo]       = envelope(ch.signalRawNoBaselineRectified, paramter, method);
+            [ch.signalFilteredLowBaselineEnveloped, lo] = envelope(ch.signalFilteredLowBaselineRectified, paramter, method);
+            [ch.signalFilteredNoBaselineEnveloped, lo]  = envelope(ch.signalFilteredNoBaselineRectified, paramter, method);
+                                 
+            %maxs   
+            ch.rawEnvelopedMax                       = max(ch.rawEnveloped);
+            ch.filteredEnvelopedMax                  = max(ch.filteredEnveloped);
+            ch.signalRawLowBaselineEnvelopedMax      = max(ch.signalRawLowBaselineEnveloped);
+            ch.signalRawNoBaselineEnvelopedMax       = max(ch.signalRawNoBaselineEnveloped);
+            ch.signalFilteredLowBaselineEnvelopedMax = max(ch.signalFilteredLowBaselineEnveloped);
+            ch.signalFilteredNoBaselineEnvelopedMax  = max(ch.signalFilteredNoBaselineEnveloped);
+        end
+        
+        
+        %% baseline
+
+        function [timestampStart, timestampEnd] = getIntervalTimestamps(ch, timeInterval)
             startTime = timeInterval(1);
             endTime = timeInterval(2);
             
@@ -93,22 +248,60 @@ classdef channel < handle
             
             endDiff = ch.endTimeApprox - endTime;
             timestampEnd = length(ch.t) - floor( (endDiff / (ch.msPerTs/1000)) );
-            
-            
-            ch.t = ch.t(timestampStart : timestampEnd);
-            ch.raw = ch.raw(timestampStart : timestampEnd);
-            ch.nTimestamps = length(ch.t);
-            
-            ch.startTime = ch.t(1);
-            ch.endTimeApprox = ch.t(end);
-            ch.durationApprox = ch.t(end) - ch.t(1);
-        end
-        
-    
-        function bandPass(ch, passBand)%(*)
-            ch.filtered = bandpass(ch.raw, passBand, ch.sf);
         end
 
+        function timeStampIntervals = getMultipleIntervalTimestamps(ch, baselineTimeIntervals)
+            timeStampIntervals = {};
+            for i = 1 : length(baselineTimeIntervals)
+                timeInterval = baselineTimeIntervals{i};
+                [timestampStart, timestampEnd] = ch.getIntervalTimestamps(timeInterval);
+                timeStampIntervals{i} = [timestampStart, timestampEnd];
+            end
+        end %end of method getIntervalTimestamps
+
+        function timeStampIntervalsConcat = getIntervalTimestampsConcat(ch, timeIntervals)
+            intervalsTimestamp = ch.getMultipleIntervalTimestamps(timeIntervals);
+            
+            firtInterval = intervalsTimestamp{1};
+
+            timeStampIntervalsConcat = firtInterval(1):firtInterval(2);
+            
+            for i = 2:length(intervalsTimestamp)
+                intervalNow = intervalsTimestamp{i};
+                timeStampsNow = intervalNow(1) : intervalNow(2);
+                timeStampIntervalsConcat = [timeStampIntervalsConcat, timeStampsNow];
+            end
+        end
+
+
+     %% summary statistics
+     function meanRMSValue = meanRMS(ch, timeIntervals)
+         originalSignal = ch.originalSignal;
+         timeStampIntervals = ch.getMultipleIntervalTimestamps(timeIntervals);
+         for i = 1 : length(timeStampIntervals)
+             intervalNow = timeStampIntervals{i};
+             startStamp = intervalNow(1);
+             endStamp = intervalNow(2);
+             originalSignal(startStamp : endStamp) = 0;
+         end
+         meanRMSValue = mean(abs(originalSignal));
+     end %end of method meanRMSValue
+
+     function [pSignal, pNoise] = SNRValue(ch, signalIntervals, noiseIntervals)
+         originalSignal = ch.originalSignal;
+
+         timeStampSignal = ch.getIntervalTimestampsConcat(signalIntervals);
+         timeStampNoise  = ch.getIntervalTimestampsConcat(noiseIntervals);
+         
+         pSignal = rms(originalSignal(timeStampSignal));
+         pNoise  = rms(originalSignal(timeStampNoise));
+     end %end of method SNRValue
+        
+
+     
+
+
+            %%
         function detectSpikes(ch, thres, preTime, postTime)
             % from CyborgBrainOrg.m
             
@@ -135,6 +328,8 @@ classdef channel < handle
                     ii = ii + 1;
                 end
             end
+            
+            
             
             ch.nSpikes = length(ch.spikeTimestamps); %발견한 spike 개수 저장 
             fprintf('number of spikes found : %d\n', ch.nSpikes);

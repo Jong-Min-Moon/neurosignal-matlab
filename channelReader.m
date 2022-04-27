@@ -2,6 +2,7 @@ classdef channelReader < handle
     properties
         massiveData
         massiveDataChannelRows
+        channelList
         fileSampleRate
         fileTimeColumnIdx
         fileBinTimeStart
@@ -11,7 +12,34 @@ classdef channelReader < handle
         function chReader = channelReader()
         end
         
-        
+        function channelObject = readVerticalChannel(chReader, filename, timeColumnIdx, startRowIdx, startColIdx, sampleRate, organoidNum, channelNum, month)
+           
+           
+            x = readmatrix(filename);
+            if timeColumnIdx > 0 %time variable이 있는 경우 
+                binTimeStart = readmatrix(filename,  range = [startRowIdx timeColumnIdx] ); %time이 첫 번째 column이 되도록 데이터를 불러온 후  
+                binTimeStart = binTimeStart(:, 1); % 
+                % 시간을 나타내는 열을 따로 저장 
+                
+            end
+            
+            x = chReader.checkNanCol(x); % NaN column check
+            
+            % make xVector and tVector
+            if timeColumnIdx > 0
+                [xVector, nObsPerRow] = chReader.vectorizeX(x);
+                [tVector, sampleRateUsed] = chReader.vectorizeT(binTimeStart, nObsPerRow, numel(xVector));
+            else
+                sampleRateUsed = sampleRate;
+                [xVector, ~] = chReader.vectorizeX(x);
+                tVector = chReader.makeTimeVariable(numel(xVector), sampleRateUsed);
+            end
+                        
+            % common procedure
+            [xResampled, tResampled] = resample(xVector, tVector, sampleRateUsed, 'spline'); %resample 및 interpolation 실행
+            channelObject = channel(xResampled, tResampled, sampleRateUsed, organoidNum, channelNum, month);
+        end
+
         function channelObject = readSingleChannel(chReader, filename, timeColumnIdx, startRowIdx, startColIdx, sampleRate, organoidNum, channelNum, month)
             % inputs:
             %   1. filename: 파일 경로 입력
@@ -67,8 +95,9 @@ classdef channelReader < handle
             chReader.massiveData = readmatrix(filename, range = [startRowIdx channelColumnIdx]);
             chReader.massiveDataChannelRows = chReader.massiveData(:,1); %채널 정보를 저장
             
-            fprintf("This file has %d channels: ", length(unique(chReader.massiveDataChannelRows)))
-            unique(transpose(chReader.massiveDataChannelRows))
+            chReader.channelList = unique(chReader.massiveDataChannelRows);
+            fprintf("This file has %d channels: ", length( chReader.channelList ))
+            transpose(chReader.channelList)
             if timeColumnIdx > 0 % 시간이 기록되어 있으면, 
                 chReader.fileBinTimeStart = chReader.massiveData(:, timeColumnIdx- channelColumnIdx + 1); %시간 정보를 따로 저장
             end
@@ -105,12 +134,15 @@ classdef channelReader < handle
         
         
         
-        function channelObjects = readManyChannelsFromFile(chReader, organoidNum, channelNums,  month)
+        function channelDict = readManyChannelsFromFile(chReader, organoidNum, month)
+            fprintf("Reading %d channels at once...\n\n", length(chReader.channelList))
             channelObjects = {};
-            for channelNum = channelNums
-                channelObjects{channelNum} = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
+            for i = 1:length(chReader.channelList)
+                channelNum = chReader.channelList(i);
+                channelObjects{i} = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
             end % for loop
-            
+            channelDict = containers.Map(chReader.channelList, channelObjects);
+
         end % function readAllChannelsFromFile
    
         
