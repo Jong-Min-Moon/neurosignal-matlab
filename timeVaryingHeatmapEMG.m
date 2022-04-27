@@ -2,10 +2,10 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
     properties
         maxRaw                       
         maxFiltered
-          maxSignalRawLowBaseline    
-          maxSignalRawNoBaseline     
-          maxSignalFilteredLowBaseline 
-          maxSignalFilteredNoBaseline  
+        maxSignalRawLowBaseline    
+        maxSignalRawNoBaseline     
+        maxSignalFilteredLowBaseline 
+        maxSignalFilteredNoBaseline  
     end
     
     methods
@@ -245,14 +245,16 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
         end % end of method envelope
         
             
-function makeTimeVaryingHeatmapRaw(apm, timeInterval, colormap)
+function makeTimeVaryingHeatmap(apm, timeInterval, datatype, colormap)
     msPerTs = apm.pixels{1,1}.msPerTs;
     nTimestamps = apm.pixels{1,1}.nTimestamps;
     stepSize = round(timeInterval / msPerTs);
     nSteps = fix(nTimestamps/stepSize);
     
     % print info for the user
-    fprintf("step size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
+    fprintf("datatype = ")
+    fprintf(datatype)
+    fprintf("\nstep size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
     fprintf("Total %d steps\n", nSteps)
     
     
@@ -265,7 +267,21 @@ function makeTimeVaryingHeatmapRaw(apm, timeInterval, colormap)
         for j = 1 : apm.pixelsNRow % loop over 
             for k = 1 : apm.pixelsNCol
                 %%%%%%%
-                envelopeValueNow = apm.pixels{j,k}.rawEnveloped(timestampNow);
+                if datatype == "raw"
+                    envelopeValueNow = apm.pixels{j,k}.rawEnveloped(timestampNow);
+                elseif datatype == "filtered"
+                    envelopeValueNow = apm.pixels{j,k}.filteredEnveloped(timestampNow);
+                elseif datatype == "signalRawLowBaseline"
+                    envelopeValueNow = apm.pixels{j,k}.signalRawLowBaselineEnveloped(timestampNow);
+                elseif datatype == "signalRawNoBaseline"
+                    envelopeValueNow = apm.pixels{j,k}.signalRawNoBaselineEnveloped(timestampNow);
+                elseif datatype == "signalFilteredLowBaseline"
+                    envelopeValueNow = apm.pixels{j,k}.signalFilteredLowBaselineEnveloped(timestampNow);
+                elseif datatype == "signalFilteredNoBaseline"
+                    envelopeValueNow = apm.pixels{j,k}.signalFilteredNoBaselineEnveloped(timestampNow);
+                end
+        
+                
                 %%%%%%%%
                 matrixNow(j, k) = envelopeValueNow;
             end % loop over columns
@@ -276,8 +292,27 @@ function makeTimeVaryingHeatmapRaw(apm, timeInterval, colormap)
     
     % draw a time-varying heatmap
     %%%%%%
-    maxSignal = apm.maxRaw;
-    %%%%%%
+    if datatype == "raw"
+        maxSignal = apm.maxRaw;
+    elseif datatype == "filtered"
+        maxSignal = apm.maxFiltered;
+    elseif datatype == "signalRawLowBaseline"
+        maxSignal = apm.maxSignalRawLowBaseline;
+    elseif datatype == "signalRawNoBaseline"
+        maxSignal = apm.maxSignalRawNoBaseline;
+    elseif datatype == "signalFilteredLowBaseline"
+        maxSignal = apm.maxSignalFilteredLowBaseline;
+    elseif datatype == "signalFilteredNoBaseline"
+        maxSignal = maxSignalFilteredNoBaseline;
+    end
+    
+    
+                          
+    
+                
+                
+                
+                %%%%%%
     fprintf("max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
                 
     figure;
@@ -292,294 +327,6 @@ function makeTimeVaryingHeatmapRaw(apm, timeInterval, colormap)
     
 end      
 
-function makeTimeVaryingHeatmapFiltered(apm, timeInterval, colormap)
-    msPerTs = apm.pixels{1,1}.msPerTs;
-    nTimestamps = apm.pixels{1,1}.nTimestamps;
-    stepSize = round(timeInterval / msPerTs);
-    nSteps = fix(nTimestamps/stepSize);
-    
-    % print info for the user
-    fprintf("step size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
-    fprintf("Total %d steps\n", nSteps)
-    
-    
-    % create matrices
-    apm.matrices = cell(1, nSteps);
-    
-    for i = 1:nSteps % loop over each step
-        matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);%initialize a matrix for this step
-        timestampNow = 1 + (i-1)*stepSize;
-        for j = 1 : apm.pixelsNRow % loop over 
-            for k = 1 : apm.pixelsNCol
-                %%%%%%%
-                envelopeValueNow = apm.pixels{j,k}.filteredEnveloped(timestampNow);
-                %%%%%%%%
-                matrixNow(j, k) = envelopeValueNow;
-            end % loop over columns
-        end % loop over rows
-        apm.matrices{i} = matrixNow;
-    end % loop over steps
-        
-    
-    % draw a time-varying heatmap
-    %%%%%%
-    maxSignal = apm.maxFiltered;
-    %%%%%%
-    fprintf("max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
-                
-    figure;
-    for i = 1:nSteps
-         %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-        heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
-        drawnow;
-
-    end
-    
-    
-    
-end
-
-function makeTimeVaryingHeatmapSignalRawLowBaseline(apm, timeInterval, colormap)
-    msPerTs = apm.pixels{1,1}.msPerTs;
-    nTimestamps = apm.pixels{1,1}.nTimestamps;
-    stepSize = round(timeInterval / msPerTs);
-    nSteps = fix(nTimestamps/stepSize);
-    
-    % print info for the user
-    fprintf("step size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
-    fprintf("Total %d steps\n", nSteps)
-    
-    
-    % create matrices
-    apm.matrices = cell(1, nSteps);
-    
-    for i = 1:nSteps % loop over each step
-        matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);%initialize a matrix for this step
-        timestampNow = 1 + (i-1)*stepSize;
-        for j = 1 : apm.pixelsNRow % loop over 
-            for k = 1 : apm.pixelsNCol
-                %%%%%%%
-                envelopeValueNow = apm.pixels{j,k}.signalRawLowBaselineEnveloped(timestampNow);
-                %%%%%%%%
-                matrixNow(j, k) = envelopeValueNow;
-            end % loop over columns
-        end % loop over rows
-        apm.matrices{i} = matrixNow;
-    end % loop over steps
-        
-    
-    % draw a time-varying heatmap
-    %%%%%%
-    maxSignal = apm.maxSignalRawLowBaseline;
-    %%%%%%
-    fprintf("max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
-                
-    figure;
-    for i = 1:nSteps
-         %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-        heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
-        drawnow;
-
-    end
-    
-    
-    
-end
-
-function makeTimeVaryingHeatmapSignalRawNoBaseline(apm, timeInterval, colormap)
-    msPerTs = apm.pixels{1,1}.msPerTs;
-    nTimestamps = apm.pixels{1,1}.nTimestamps;
-    stepSize = round(timeInterval / msPerTs);
-    nSteps = fix(nTimestamps/stepSize);
-    
-    % print info for the user
-    fprintf("step size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
-    fprintf("Total %d steps\n", nSteps)
-    
-    
-    % create matrices
-    apm.matrices = cell(1, nSteps);
-    
-    for i = 1:nSteps % loop over each step
-        matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);%initialize a matrix for this step
-        timestampNow = 1 + (i-1)*stepSize;
-        for j = 1 : apm.pixelsNRow % loop over 
-            for k = 1 : apm.pixelsNCol
-                %%%%%%%
-                envelopeValueNow = apm.pixels{j,k}.signalRawNoBaselineEnveloped(timestampNow);
-                %%%%%%%%
-                matrixNow(j, k) = envelopeValueNow;
-            end % loop over columns
-        end % loop over rows
-        apm.matrices{i} = matrixNow;
-    end % loop over steps
-        
-    
-    % draw a time-varying heatmap
-    %%%%%%
-    maxSignal = apm.maxSignalRawNoBaseline;
-    %%%%%%
-    fprintf("max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
-                
-    figure;
-    for i = 1:nSteps
-         %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-        heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
-        drawnow;
-
-    end
-    
-    
-    
-end
-     
-function makeTimeVaryingHeatmapSignalFilteredLowBaseline(apm, timeInterval, colormap)
-    msPerTs = apm.pixels{1,1}.msPerTs;
-    nTimestamps = apm.pixels{1,1}.nTimestamps;
-    stepSize = round(timeInterval / msPerTs);
-    nSteps = fix(nTimestamps/stepSize);
-    
-    % print info for the user
-    fprintf("step size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
-    fprintf("Total %d steps\n", nSteps)
-    
-    
-    % create matrices
-    apm.matrices = cell(1, nSteps);
-    
-    for i = 1:nSteps % loop over each step
-        matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);%initialize a matrix for this step
-        timestampNow = 1 + (i-1)*stepSize;
-        for j = 1 : apm.pixelsNRow % loop over 
-            for k = 1 : apm.pixelsNCol
-                %%%%%%%
-                envelopeValueNow = apm.pixels{j,k}.signalFilteredLowBaselineEnveloped(timestampNow);
-                %%%%%%%%
-                matrixNow(j, k) = envelopeValueNow;
-            end % loop over columns
-        end % loop over rows
-        apm.matrices{i} = matrixNow;
-    end % loop over steps
-        
-    
-    % draw a time-varying heatmap
-    %%%%%%
-    maxSignal = apm.maxSignalFilteredLowBaseline;
-    %%%%%%
-    fprintf("max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
-                
-    figure;
-    for i = 1:nSteps
-         %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-        heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
-        drawnow;
-
-    end
-    
-    
-    
-end
-
-function makeTimeVaryingHeatmapSignalFilteredNoBaseline(apm, timeInterval, colormap)
-    msPerTs = apm.pixels{1,1}.msPerTs;
-    nTimestamps = apm.pixels{1,1}.nTimestamps;
-    stepSize = round(timeInterval / msPerTs);
-    nSteps = fix(nTimestamps/stepSize);
-    
-    % print info for the user
-    fprintf("step size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
-    fprintf("Total %d steps\n", nSteps)
-    
-    
-    % create matrices
-    apm.matrices = cell(1, nSteps);
-    
-    for i = 1:nSteps % loop over each step
-        matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);%initialize a matrix for this step
-        timestampNow = 1 + (i-1)*stepSize;
-        for j = 1 : apm.pixelsNRow % loop over 
-            for k = 1 : apm.pixelsNCol
-                %%%%%%%
-                envelopeValueNow = apm.pixels{j,k}.signalFilteredNoBaselineEnveloped(timestampNow);
-                %%%%%%%%
-                matrixNow(j, k) = envelopeValueNow;
-            end % loop over columns
-        end % loop over rows
-        apm.matrices{i} = matrixNow;
-    end % loop over steps
-        
-    
-    % draw a time-varying heatmap
-    %%%%%%
-    maxSignal = apm.maxSignalFilteredNoBaseline;
-    %%%%%%
-    fprintf("max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
-                
-    figure;
-    for i = 1:nSteps
-         %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-        heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
-        drawnow;
-
-    end
-    
-    
-    
-end
-%         function makeTimeVaryingHeatmap(apm, timeInterval, filtered, colormap)
-%             msPerTs = apm.pixels{1,1}.msPerTs;
-%             nTimestamps = apm.pixels{1,1}.nTimestamps;
-%             stepSize = round(timeInterval / msPerTs);
-%             nSteps = fix(nTimestamps/stepSize);
-%             
-%             % print info for the user
-%             fprintf("step size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
-%             fprintf("Total %d steps\n", nSteps)
-%             
-%             
-%             % create matrices
-%             apm.matrices = cell(1, nSteps);
-%             
-%             for i = 1:nSteps % loop over each step
-%                 matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);%initialize a matrix for this step
-%                 timestampNow = 1 + (i-1)*stepSize;
-%                 for j = 1 : apm.pixelsNRow % loop over 
-%                     for k = 1 : apm.pixelsNCol
-%                         if filtered
-%                             envelopeValueNow = apm.pixels{j,k}.signalFilteredEnveloped(timestampNow);
-%                         else
-%                             envelopeValueNow = apm.pixels{j,k}.signalRawEnveloped(timestampNow);
-%                         end
-%                         matrixNow(j, k) = envelopeValueNow;
-%                     end % loop over columns
-%                 end % loop over rows
-%                 apm.matrices{i} = matrixNow;
-%             end % loop over steps
-%                 
-%             
-%             % draw a time-varying heatmap
-%             
-%             if filtered
-%                 maxSignal = apm.maxSignalFiltered;
-%             else
-%                 maxSignal = apm.maxSignalRaw;
-%             end
-%                
-%             
-%             fprintf("max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
-%                         
-%             figure;
-%             for i = 1:nSteps
-%                  %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-%                 heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
-%                 drawnow;
-% 
-%             end
-%             
-%             
-%             
-%         end
-        
         
     
             
