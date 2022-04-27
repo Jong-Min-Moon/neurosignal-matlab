@@ -60,7 +60,19 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
         
         
         
-        
+        function filterBaseline(apm, baselineTimeIntervals, passBand)
+            for i = 1 : apm.pixelsNRow
+                for j = 1 : apm.pixelsNCol
+                    apm.pixels{i,j}.filterBaseline(baselineTimeIntervals, passBand);
+                end
+            end
+        end
+                      
+
+       
+
+
+
         
         
         
