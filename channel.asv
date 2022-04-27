@@ -46,13 +46,42 @@ classdef channel < handle
         
         
         %EMG data analysis
-        signalRawRectified
-        signalFilteredRectified
+        originalSignal
+        
+        
+        % baseline filterd
+        signalRawLowBaseline
+        signalRawNoBaseline
+        signalFilteredLowBaseline
+        signalFilteredNoBaseline
+        
+        % Rectified
+        rawRectified
+        filteredRectified
+        signalRawLowBaselineRectified
+        signalRawNoBaselineRectified
+        signalFilteredLowBaselineRectified
+        signalFilteredNoBaselineRectified
+        
+
+        % Enveloped
+        rawEnveloped
+        filteredEnveloped
+        signalRawLowBaselineEnveloped
+        signalRawNoBaselineEnveloped
+        signalFilteredLowBaselineEnveloped
+        signalFilteredNoBaselineEnveloped
+
+
+
+
         signalRawEnveloped
         signalFilteredEnveloped
         
         signalRawEnvelopedMax
         signalFilteredEnvelopedMax
+
+        rawBaselineFiltered
     end
     
     methods
@@ -67,14 +96,19 @@ classdef channel < handle
             ch.sf = sampleRate;
             ch.msPerTs = (1000 / sampleRate);
             
+            % t related
             ch.t = t;
-            ch.raw = x;
-            ch.filtered = x; %일단 filtered에도 raw x를 저장해 놓음
             ch.nTimestamps = length(t);
-            
             ch.startTime = t(1);
             ch.endTimeApprox = t(end);
             ch.durationApprox = t(end) - t(1);
+            
+            % signals
+            ch.originalSignal = x;
+            ch.raw = x;
+            ch.filtered = x; %일단 filtered에도 raw x를 저장해 놓음
+
+
             
             ch.clusterColors = ["red", "green", "blue", "magenta", "cyan", "yellow"]';
             
@@ -86,11 +120,13 @@ classdef channel < handle
         end
         
 
-      %% cutting
+     
+        %% Preprocessing for EMG
+            %% 1. cutting
 
         function cutTime(ch, timeInterval)
             
-            [timestampStart, timestampEnd] = ch.getIntervalTimestamps(timeInterval)
+            [timestampStart, timestampEnd] = ch.getIntervalTimestamps(timeInterval);
             ch.t = ch.t(timestampStart : timestampEnd);
             ch.nTimestamps = length(ch.t);
             
@@ -100,37 +136,100 @@ classdef channel < handle
             
 
             %raw와 filtered 모두 cut하고 각자 저장함
-            % raw
-            ch.raw = ch.raw(timestampStart : timestampEnd);
-            
-            % filtered
-            ch.filtered = ch.filtered(timestampStart : timestampEnd);
+            ch.raw = ch.originalSignal(timestampStart : timestampEnd);% raw
+            ch.filtered = ch.originalSignal(timestampStart : timestampEnd);% filtered
                         
             %display info to the user
+            fprintf("Reset all preprocessing of signals")
             fprintf("new startTime = %f\n", ch.startTime)
             fprintf("new endTime = %f\n", ch.endTimeApprox)
             fprintf("new duration = %f\n", ch.durationApprox)
             fprintf("new nTimestamp = %d\n", ch.nTimestamps)
+        end % end of function cutTime
+
+        %% 2. baseline filtering
+        function filterBaseline(ch, baselineTimeIntervals, passBand)
+            timeStampIntervals = ch.getBasedlineTimestamps(baselineTimeIntervals);
+            replacement = bandpass(ch.raw, passBand, ch.sf);
+            ch.signalRawLowBaseline = ch.raw;
+            ch.signalRawNoBaseline = ch.raw;
+            for i = 1 : length(timeStampIntervals)
+                intervalNow = timeStampIntervals{i};
+                startStamp = intervalNow(1);
+                endStamp = intervalNow(2);
+                ch.signalRawLowBaseline(startStamp : endStamp) = replacement(startStamp : endStamp);
+                ch.signalRawNoBaseline(startStamp : endStamp) = 0;
+            end % end of for loop over timeStampIntervals
+            ch.signalFilteredLowBaseline = ch.signalRawLowBaseline; %copy
+            ch.signalFilteredNoBaseline = ch.signalRawNoBaseline; %copy
+        end  % end of method filterBaseline      
+
+        %% 3. signal filtering
+        
+        % bandpass filter
+        function bandPass(ch, passBand)%(*)
+            ch.filtered = bandpass(ch.filtered, passBand, ch.sf);
         end
         
-        function rectify(ch)
-            ch.signalRawRectified = abs(ch.raw);
-            ch.signalFilteredRectified = abs(ch.filtered);
+        % butterworth high-pass filter
+        function highPassButterworth(ch, order, cutoff)
+            %cutoff of high-pass filter = lower bound
+            Fn = (ch.sf/2); % Nyquist frequency
+            ftype = "high";
+            [b, a] = butter(order, cutoff/Fn, ftype);
+
+            ch.filtered = filter(b,a,ch.filtered);
+            ch.signalFilteredLowBaseline = filter(b,a,ch.signalFilteredLowBaseline);
+            ch.signalFilteredNoBaseline = filter(b,a,ch.signalFilteredNoBaseline);
+        
         end
+        
+        function notchButterworth(ch, order, notch)
+            Fn = (ch.sf/2); % Nyquist frequency
+            ftype = 'stop';
+            [b, a] = butter(order, notch/Fn, ftype);
+
+            ch.filtered = filter(b,a,ch.filtered); 
+            ch.signalFilteredLowBaseline = filter(b,a,ch.signalFilteredLowBaseline);
+            ch.signalFilteredNoBaseline = filter(b,a,ch.signalFilteredNoBaseline);
+        end
+
+        %% 4. rectify
+        function rectify(ch)
+            ch.rawRectified                       = abs(ch.raw);
+            ch.filteredRectified                  = abs(ch.filtered);
+            ch.signalRawLowBaselineRectified      = abs(ch.signalRawLowBaseline);
+            ch.signalRawNoBaselineRectified       = abs(ch.signalRawNoBaseline);
+            ch.signalFilteredLowBaselineRectified = abs(ch.signalFilteredLowBaseline);
+            ch.signalFilteredNoBaselineRectified  = abs(ch.signalFilteredNoBaseline);
+        end
+        
+        
         
         function envelope(ch, windowSize)
-            if length(ch.signalRawRectified) < 1
-                error("signal not rectified. Rectify first.")
-            else
-                [ch.signalRawEnveloped, lo] = envelope(ch.signalRawRectified, windowSize, "rms");
-                [ch.signalFilteredEnveloped, lo] = envelope(ch.signalFilteredRectified, windowSize, "rms");
-                ch.signalRawEnvelopedMax = max(ch.signalRawEnveloped);
-                ch.signalFilteredEnvelopedMax = max(ch.signalFilteredEnveloped);
-            end
+            %enveloping
+            [ch.rawEnveloped, lo]                       = envelope(ch.rawRectified, windowSize, "rms");
+            [ch.filteredEnveloped, lo]                  = envelope(ch.filteredRectified, windowSize, "rms");
+            [ch.signalRawLowBaselineEnveloped, lo]      = envelope(ch.signalRawLowBaselineRectified, windowSize, "rms");
+            [ch.signalRawNoBaselineEnveloped, lo]       = envelope(ch.signalRawNoBaselineRectified, windowSize, "rms");
+            [ch.signalFilteredLowBaselineEnveloped, lo] = envelope(ch.signalFilteredLowBaselineRectified, windowSize, "rms");
+            [ch.signalFilteredNoBaselineEnveloped, lo]  = envelope(ch.signalFilteredNoBaselineRectified, windowSize, "rms");
+                                 
+            %maxs   
+            ch.rawEnvelopedMax = max(ch.signalRawEnveloped);
+            ch.signalFilteredEnvelopedMax = max(ch.signalFilteredEnveloped);
+
+            rawEnvelopedMax                       = max(rawEnveloped)
+            filteredEnvelopedMax                  = max(filteredEnveloped)
+            signalRawLowBaselineEnvelopedMax      = max(signalRawLowBaselineEnveloped)
+            signalRawNoBaselineEnvelopedMax       = max(signalRawNoBaselineEnveloped)
+            signalFilteredLowBaselineEnvelopedMax = max(signalFilteredLowBaselineEnveloped)
+            signalFilteredNoBaselineEnvelopedMax  = max(signalFilteredNoBaselineEnveloped  
         end
         
         
         %% baseline
+
         function [timestampStart, timestampEnd] = getIntervalTimestamps(ch, timeInterval)
             startTime = timeInterval(1);
             endTime = timeInterval(2);
@@ -154,49 +253,20 @@ classdef channel < handle
         end
 
         function timeStampIntervals = getBasedlineTimestamps(ch, baselineTimeIntervals)
-            timeStampIntervals = {}
+            timeStampIntervals = {};
             for i = 1 : length(baselineTimeIntervals)
-                timeInterval = baselineTimeIntervals{i}
-                timeStampIntervals{i} = ch.getIntervalTimestamps(timeInterval)
+                timeInterval = baselineTimeIntervals{i};
+                [timestampStart, timestampEnd] = ch.getIntervalTimestamps(timeInterval);
+                timeStampIntervals{i} = [timestampStart, timestampEnd];
             end
         end %end of method getBasedlineTimestamps
 
-        function filterBaseline(ch, baselineTimeIntervals)
-            timeStampIntervals = ch.getBasedlineTimestamps(baselineTimeIntervals)
-            ch.baselineFiltered = bandpass(ch.raw, passBand, ch.sf)
-        end
+
         
-        %% filters
+ 
         
-        % bandpass filter
-        function bandPass(ch, passBand)%(*)
-            ch.filtered = bandpass(ch.filtered, passBand, ch.sf);
-        end
-        
-        % butterworth high-pass filter
-        function highPassButterworth(ch, order, cutoff)
-            %cutoff of high-pass filter = lower bound
-            Fn = (ch.sf/2); % Nyquist frequency
-            ftype = "high";
-            [b, a] = butter(order, cutoff/Fn, ftype);
-            ch.filtered = filter(b,a,ch.filtered);
-        
-        end
-        
-        function notchButterworth(ch, order, notch)
-            Fn = (ch.sf/2); % Nyquist frequency
-            ftype = 'stop';
-            [b, a] = butter(order, notch/Fn, ftype);
-            ch.filtered = filter(b,a,ch.filtered); 
-        end
-        
-    
-        
-        % normalize
-        function normalizeEnvelope(ch, maxEnvValue)           
-            ch.signalRawEnveloped = ch.signalRawEnveloped * (maxEnvValue / ch.signalRawEnvelopedMax);
-            ch.signalFilteredEnveloped = ch.signalFilteredEnveloped * (maxEnvValue / ch.signalFilteredEnvelopedMax);
-        end
+
+     
 
 
             %%
