@@ -72,16 +72,15 @@ classdef channel < handle
         signalFilteredLowBaselineEnveloped
         signalFilteredNoBaselineEnveloped
 
+        % max values of enveloped
+        rawEnvelopedMax
+        filteredEnvelopedMax
+        signalRawLowBaselineEnvelopedMax
+        signalRawNoBaselineEnvelopedMax
+        signalFilteredLowBaselineEnvelopedMax
+        signalFilteredNoBaselineEnvelopedMax
 
-
-
-        signalRawEnveloped
-        signalFilteredEnveloped
-        
-        signalRawEnvelopedMax
-        signalFilteredEnvelopedMax
-
-        rawBaselineFiltered
+       
     end
     
     methods
@@ -216,15 +215,12 @@ classdef channel < handle
             [ch.signalFilteredNoBaselineEnveloped, lo]  = envelope(ch.signalFilteredNoBaselineRectified, windowSize, "rms");
                                  
             %maxs   
-            ch.rawEnvelopedMax = max(ch.signalRawEnveloped);
-            ch.signalFilteredEnvelopedMax = max(ch.signalFilteredEnveloped);
-
-            rawEnvelopedMax                       = max(rawEnveloped);
-            filteredEnvelopedMax                  = max(filteredEnveloped);
-            signalRawLowBaselineEnvelopedMax      = max(signalRawLowBaselineEnveloped);
-            signalRawNoBaselineEnvelopedMax       = max(signalRawNoBaselineEnveloped);
-            signalFilteredLowBaselineEnvelopedMax = max(signalFilteredLowBaselineEnveloped);
-            signalFilteredNoBaselineEnvelopedMax  = max(signalFilteredNoBaselineEnveloped);
+            ch.rawEnvelopedMax                       = max(ch.rawEnveloped);
+            ch.filteredEnvelopedMax                  = max(ch.filteredEnveloped);
+            ch.signalRawLowBaselineEnvelopedMax      = max(ch.signalRawLowBaselineEnveloped);
+            ch.signalRawNoBaselineEnvelopedMax       = max(ch.signalRawNoBaselineEnveloped);
+            ch.signalFilteredLowBaselineEnvelopedMax = max(ch.signalFilteredLowBaselineEnveloped);
+            ch.signalFilteredNoBaselineEnvelopedMax  = max(ch.signalFilteredNoBaselineEnveloped);
         end
         
         
