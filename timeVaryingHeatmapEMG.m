@@ -244,18 +244,19 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
 
         end % end of method envelope
         
-            
-function makeTimeVaryingHeatmap(apm, timeInterval, datatype, colormap)
+ function makeTimeVaryingHeatmap(apm, timeInterval, datatype, displaynumber, colormap, filename)
     msPerTs = apm.pixels{1,1}.msPerTs;
     nTimestamps = apm.pixels{1,1}.nTimestamps;
     stepSize = round(timeInterval / msPerTs);
     nSteps = fix(nTimestamps/stepSize);
-    
+    duration = apm.pixels{1,1}.durationApprox;
+     
     % print info for the user
     fprintf("datatype = ")
     fprintf(datatype)
     fprintf("\nstep size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
     fprintf("Total %d steps\n", nSteps)
+    fprintf("length = %d seconds\n", duration)
     
     
     % create matrices
@@ -314,16 +315,45 @@ function makeTimeVaryingHeatmap(apm, timeInterval, datatype, colormap)
                 
                 %%%%%%
     fprintf("max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
-                
+          
+
+    
+
+    
+figure;
+    for i = 1:nSteps
+         %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
+         if displaynumber
+            heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap);
+         else
+             heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
+         end
+        
+        F(i) = getframe(gcf);
+
+
+    end
+
     figure;
     for i = 1:nSteps
          %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-        heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
+         if displaynumber
+            heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap);
+         else
+             heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
+         end
+        
         drawnow;
 
     end
     
-    
+    v = VideoWriter(filename, 'MPEG-4');
+    v.FrameRate = 60 / (stepSize/1000);
+    v.Quality = 100;
+
+    open(v);
+    writeVideo(v, F);
+    close(v);
     
 end      
 

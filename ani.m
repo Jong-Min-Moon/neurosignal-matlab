@@ -83,7 +83,7 @@ for i = 1:length(delay)
 end
 
 v = VideoWriter('test.mp4', 'MPEG-4');
-v.FrameRate = 30;%1초에 30frame. 위에서 100 frame으로 했으니까 3.3초짜리가 될 것.
+v.FrameRate = ;%1초에 30frame. 위에서 100 frame으로 했으니까 3.3초짜리가 될 것.
 v.Quality = 100;
 
 open(v);
