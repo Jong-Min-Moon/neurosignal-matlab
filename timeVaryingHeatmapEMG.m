@@ -154,10 +154,10 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
           end 
         end
         
-        function envelope(apm, windowSize)
+        function envelope(apm, parameter, method)
           for i = 1 : apm.pixelsNRow
                 for j = 1 : apm.pixelsNCol
-                    apm.pixels{i,j}.envelope(windowSize);
+                    apm.pixels{i,j}.envelope(parameter, method);
                 end
           end
           
@@ -250,14 +250,15 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
     stepSize = round(timeInterval / msPerTs);
     nSteps = fix(nTimestamps/stepSize);
     duration = apm.pixels{1,1}.durationApprox;
-     
+    realTimeFramerate = 60 / (timeInterval/1000);
+
     % print info for the user
     fprintf("datatype = ")
     fprintf(datatype)
     fprintf("\nstep size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
     fprintf("Total %d steps\n", nSteps)
     fprintf("length = %d seconds\n", duration)
-    
+    fprintf("realtime framerate per second = %d \n", realTimeFramerate)
     
     % create matrices
     apm.matrices = cell(1, nSteps);
@@ -348,7 +349,7 @@ figure;
     end
     
     v = VideoWriter(filename, 'MPEG-4');
-    v.FrameRate = 60 / (stepSize/1000);
+    v.FrameRate = realTimeFramerate;
     v.Quality = 100;
 
     open(v);
