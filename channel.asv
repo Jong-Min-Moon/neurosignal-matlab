@@ -259,7 +259,7 @@ classdef channel < handle
             end
         end %end of method getIntervalTimestamps
 
-        function timeStampIntervalsConcat = getIntervalTimestampsConcat(ch, timeIntervals)
+        function timeStampIntervalsConcat = getIntervalTimestampsConcat(timeIntervals)
             intervalsTimestamp = ch.getMultipleIntervalTimestamps(timeIntervals);
             
             firtInterval = intervalsTimestamp{1};
@@ -271,6 +271,7 @@ classdef channel < handle
                 timeStampsNow = intervalNow(1) : intervalNow(2);
                 timeStampIntervalsConcat = [timeStampIntervalsConcat, timeStampsNow];
             end
+            
         end
 
 
@@ -287,15 +288,22 @@ classdef channel < handle
          meanRMSValue = mean(abs(originalSignal));
      end %end of method meanRMSValue
 
-     function [pSignal, pNoise] = SNRValue(ch, signalIntervals, noiseIntervals)
+     function SNRValue = SNRValue(ch, signalIntervals, noiseIntervals)
          originalSignal = ch.originalSignal;
 
-         timeStampSignal = ch.getIntervalTimestampsConcat(signalIntervals);
-         timeStampNoise  = ch.getIntervalTimestampsConcat(noiseIntervals);
+         timeStampIntervals_signal = ch.getMultipleIntervalTimestamps(signalIntervals);
+         timeStampIntervals_noise  = ch.getMultipleIntervalTimestamps(noiseIntervals);
          
-         pSignal = rms(originalSignal(timeStampSignal));
-         pNoise  = rms(originalSignal(timeStampNoise));
-     end %end of method SNRValue
+         
+
+         for i = 1 : length(timeStampIntervals)
+             intervalNow = timeStampIntervals{i};
+             startStamp = intervalNow(1);
+             endStamp = intervalNow(2);
+             originalSignal(startStamp : endStamp) = 0;
+         end
+         meanRMSValue = mean(abs(originalSignal));
+     end %end of method meanRMSValue
         
 
      
