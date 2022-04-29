@@ -846,7 +846,7 @@ classdef channel < handle
                 random_index = fold_index{random_integer};
                 ch.raw(raw_index) = ch.raw(random_index);
             end
-
+            ch.filtered = ch.raw;
            
         end
 
