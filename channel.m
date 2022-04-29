@@ -81,6 +81,10 @@ classdef channel < handle
         signalFilteredLowBaselineEnvelopedMax
         signalFilteredNoBaselineEnvelopedMax
 
+
+        %% for firing rate
+        rawShuffled
+        
        
     end
     
@@ -823,7 +827,29 @@ classdef channel < handle
            nSpikes = ch.phaseStruct(clusterNum).nSpikes;
         end % end of getThetaPhaseByClusterNum
         
-        
+        %% for test purpose
+        function shuffle(ch, nfold)
+        % add random noise to the raw signal to imitate 
+            nSample = length(ch.raw);
+            nSamplePerFold = fix(nSample / nfold);
+            nSampleRemain= rem(nSample, nfold);
+            
+            fold_index = {};
+            for i = 1 : nfold
+                fold_index{i} = ((i-1) * nSamplePerFold + 1) : (i * nSamplePerFold);
+            end
+
+            p = randperm(nfold);
+            for i = 1 : nfold
+                random_integer = p(i);
+                raw_index = fold_index{i};
+                random_index = fold_index{random_integer};
+                ch.raw(raw_index) = ch.raw(random_index);
+            end
+
+           
+        end
+
 
     end %methods
 end %class

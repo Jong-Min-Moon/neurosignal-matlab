@@ -321,19 +321,19 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
     
 
     
-figure;
-    for i = 1:nSteps
-         %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-         if displaynumber
-            heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap);
-         else
-             heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
-         end
-        
-        F(i) = getframe(gcf);
+% figure;
+%     for i = 1:nSteps
+%          %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
+%          if displaynumber
+%             heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap);
+%          else
+%              heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
+%          end
+%         
+%         F(i) = getframe(gcf);
 
 
-    end
+%     end
 
     figure;
     for i = 1:nSteps
@@ -348,13 +348,13 @@ figure;
 
     end
     
-    v = VideoWriter(filename, 'MPEG-4');
-    v.FrameRate = realTimeFramerate;
-    v.Quality = 100;
-
-    open(v);
-    writeVideo(v, F);
-    close(v);
+%     v = VideoWriter(filename, 'MPEG-4');
+%     v.FrameRate = realTimeFramerate;
+%     v.Quality = 100;
+% 
+%     open(v);
+%     writeVideo(v, F);
+%     close(v);
     
 end      
 
