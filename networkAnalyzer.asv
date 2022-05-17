@@ -44,17 +44,20 @@ classdef networkAnalyzer < handle
                     train_1 = channel_1.spikeTimestamps;
                     train_2 = channel_2.spikeTimestamps;
                     
-                    pyrun("import numpy as np");
-                    pyrun("import pyspike");
-                    pyrun("train_1 = np.array(matlab_array_1)", matlab_array_1 = train_1);
-                    pyrun("train_2 = np.array(matlab_array_2)", matlab_array_2 = train_2);                   
-                    pyrun("train_1 = pyspike.SpikeTrain(train_1, [0, a])", a = nTimestamps);
-                    pyrun("train_2 = pyspike.SpikeTrain(train_2, [0, a])", a = nTimestamps);
+                    pyrun("import numpy as np")
+                    pyrun("import pyspike")
+                    pyrun("train_1 = np.array(matlab_array_1)", matlab_array_1 = train_1)
+                    pyrun("train_2 = np.array(matlab_array_2)", matlab_array_2 = train_2)
+                    pyrun("")
                     
-                    dist(i,j) = pyrun("d = pyspike.spike_sync(train_1,train_2)", "d");
-                    dist(j,i) = dist(i,j);
                     
-           
+                    "train_1 = pyspike.SpikeTrain(train_1, [0, a])"
+                    "train_2 = pyspike.SpikeTrain(train_2, [0, a])"
+                    
+                    dist(i,j) = py.pyspike.spike_sync(train_1,train_2);
+                    dist(j,i) = py.pyspike.spike_sync(train_1,train_2);
+                    
+                    
                 end
             end
             
