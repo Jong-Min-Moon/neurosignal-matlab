@@ -18,7 +18,6 @@ classdef networkAnalyzer < handle
             terminate(pyenv);
             pyenv('Version', pythonpath);
             pyenv("ExecutionMode","OutOfProcess")
-            na.pos = 
 
         end
         
@@ -43,7 +42,7 @@ classdef networkAnalyzer < handle
         function detectSpikes(na, thres, preTime, postTime)
             % add한 모든 채널에서 spike detection 수행
             for i = 1 : length(na.channelList)
-                channelNum = na.channelList(i);
+                channelNum = na.channels(i);
                 channel = na.channels(channelNum);
                 channel.detectSpikes(thres, preTime, postTime);
             end
@@ -51,6 +50,7 @@ classdef networkAnalyzer < handle
         
         function dist = spikeDist(na)
             pyrun("import numpy as np");
+            pyrun("import pandas as pd");
             pyrun("import pyspike");
 
             % calculate and save entries of score matrix in python.
@@ -84,8 +84,13 @@ classdef networkAnalyzer < handle
                 end
             end
             
-            filepath_score_matrix = na.filepath + "/score_matrix.npy"
-            pyrun("np.save(path, score_matrix)", path = filepath_score_matrix);
+            filepath_score_matrix = na.filepath + "/score_matrix.pkl"
+            pyrun("score_matrix = pd.DataFrame(score_matrix)");
+            pyrun("score_matrix_index = channelList", channelList = na.channelList);
+
+            pyrun("score_matrix.index = channelList", channelList = "channel"+na.channelList);
+            pyrun("score_matrix.to_pickle(path)", path = filepath_score_matrix); % save pd dataframe as pkl
+            pyrun("print(score_matrix)")
             heatmap(dist, 'Colormap', cool);
             na.distMat = dist;
             

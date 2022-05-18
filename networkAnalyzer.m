@@ -84,8 +84,17 @@ classdef networkAnalyzer < handle
                 end
             end
             
-            filepath_score_matrix = na.filepath + "/score_matrix.npy"
-            pyrun("np.save(path, score_matrix)", path = filepath_score_matrix);
+            filepath_score_matrix = na.filepath + "/score_matrix.pkl"
+            pyrun("score_matrix = pd.DataFrame(score_matrix)");
+            
+            % set channel numbers as column names of dataframe
+            pyrun("score_matrix_index = channelList", channelList = na.channelList);
+            pyrun("score_matrix_index = ['channel' + str(i) for i in score_matrix.index]")
+            pyrun("score_matrix.index = score_matrix_index")
+
+            % save pd dataframe as pkl
+            pyrun("score_matrix.to_pickle(path)", path = filepath_score_matrix); 
+            pyrun("print(score_matrix)")
             heatmap(dist, 'Colormap', cool);
             na.distMat = dist;
             
