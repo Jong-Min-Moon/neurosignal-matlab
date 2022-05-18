@@ -48,7 +48,7 @@ classdef networkAnalyzer < handle
         function detectSpikes(na, thres, preTime, postTime)
             % add한 모든 채널에서 spike detection 수행
             for i = 1 : length(na.channelList)
-                channelNum = na.channels(i);
+                channelNum = na.channelList(i);
                 channel = na.channels(channelNum);
                 channel.detectSpikes(thres, preTime, postTime);
             end
@@ -101,6 +101,16 @@ classdef networkAnalyzer < handle
             % save pd dataframe as pkl
             pyrun("score_matrix.to_pickle(path)", path = filepath_score_matrix); 
             pyrun("print(score_matrix)")
+            
+            
+            % 
+            filepath_positions = na.filepath + "/positions.pkl"
+            pyrun("positions = np.array(positions_matlab)", positions_matlab = na.positions)
+            pyrun("positions_index = positions[:,0].astype(np.int64)");
+            pyrun("positions = pd.DataFrame(positions[:,1:])");
+            pyrun("positions.index = positions_index");
+            pyrun("positions.to_pickle(path)", path = filepath_positions)
+            
             heatmap(dist, 'Colormap', cool);
             na.distMat = dist;
             
