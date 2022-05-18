@@ -61,7 +61,7 @@ classdef networkAnalyzer < handle
 
             % calculate and save entries of score matrix in python.
             % We just fetch each entry into matlab.
-            pyrun("score_matrix = np.zeros((int(nChannels), int(nChannels)))", nChannels = length(na.channelList))
+            pyrun("score_matrix = np.zeros((int(nChannels), int(nChannels)))", nChannels = length(na.channelList));
 
             dist = zeros(length(na.channelList));
             for i = 1 : length(na.channelList)
@@ -90,26 +90,17 @@ classdef networkAnalyzer < handle
                 end
             end
             
-            filepath_score_matrix = na.filepath + "/score_matrix.pkl"
-            pyrun("score_matrix = pd.DataFrame(score_matrix)");
-            
-            % set channel numbers as column names of dataframe
-            pyrun("score_matrix_index = channelList", channelList = na.channelList);
-            pyrun("score_matrix_index = ['channel' + str(i) for i in score_matrix.index]")
-            pyrun("score_matrix.index = score_matrix_index")
-
-            % save pd dataframe as pkl
-            pyrun("score_matrix.to_pickle(path)", path = filepath_score_matrix); 
-            pyrun("print(score_matrix)")
+            filepath_score_matrix = na.filepath + "/score_matrix.npy"
+            pyrun("np.save(path, score_matrix)", path = filepath_score_matrix);
             
             
             % 
             filepath_positions = na.filepath + "/positions.pkl"
-            pyrun("positions = np.array(positions_matlab)", positions_matlab = na.positions)
+            pyrun("positions = np.array(positions_matlab)", positions_matlab = na.positions);
             pyrun("positions_index = positions[:,0].astype(np.int64)");
             pyrun("positions = pd.DataFrame(positions[:,1:])");
             pyrun("positions.index = positions_index");
-            pyrun("positions.to_pickle(path)", path = filepath_positions)
+            pyrun("positions.to_pickle(path)", path = filepath_positions);
             
             heatmap(dist, 'Colormap', cool);
             na.distMat = dist;
@@ -118,7 +109,7 @@ classdef networkAnalyzer < handle
         end
         
         function louvain(na)
-            command = na.pythonpath + " " + na.filepath + "/pytest.py"
+            command = na.pythonpath + " " + na.filepath + "/drawnx.py";
             system(command)
 %             pyrun("import networkx as nx")
 %             pyrun("import matplotlib.pyplot as plt")

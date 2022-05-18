@@ -7,15 +7,29 @@ import matplotlib.animation as animation
 import community as lvcm
 import scipy
 import pickle
-            
+import pandas as pd           
 #1.  create network.
 distMat = np.load("score_matrix.npy")
+#print(distMat)
+positions = pd.read_pickle("positions.pkl")
+#print(positions)
 n_nodes = distMat.shape[1] # number of nodes = number of channels
 G = nx.Graph()
 
 # We set the electrode as a node (e.g., circles in the network map)
-G.add_nodes_from(range(n_nodes))
-        
+channel_list = ["channel{}".format(int(i)) for i in positions[0]]
+#print(channel_list)
+#G.add_nodes_from(channel_list)
+
+#pos = {}
+for i in range(len(channel_list)):
+    x_now = positions.iloc[i, 1]
+    y_now = positions.iloc[i, 2]
+    position_now = (int(x_now), int(y_now))
+    G.add_node(channel_list[i], pos = position_now )
+    #pos[channel_list[i]] = position_now
+pos=nx.get_node_attributes(G,'pos')
+#print(pos)
 # we set the degree of synchronization between the electrodes as an edge
 # (e.g., lines in the network map).
 for i in range(n_nodes):
@@ -23,7 +37,8 @@ for i in range(n_nodes):
         sync_score = distMat[i,j]
         # the links with synchronized scores less than 0.5 were filtered out.
         if sync_score >= 1/2:
-            G.add_edge(i, j, weight = sync_score)
+            
+            G.add_edge(channel_list[i], channel_list[j], weight = sync_score)
 
 
 
@@ -33,6 +48,7 @@ partition = lvcm.best_partition(graph=G, partition=None, random_state = 1)
 max_k_w = []
 for com in set(partition.values()):
     list_nodes = [nodes for nodes in partition.keys() if partition[nodes] == com]
+    list_nodes = [channel_list.index(node) for node in list_nodes]
     max_k_w = max_k_w + [list_nodes]
      # list comprehension. concat [member list] of each community
 
@@ -54,21 +70,11 @@ weights = [G[u][v]['weight'] for u, v in edges]
 Feature_color_sub = color_list_community
 
 d = dict(G.degree)
-
-pos = {}
-for key in d.keys():
-    row_num = key // 8
-    col_num = key % 8
-    pos[key] = [row_num, col_num]
-
-
 node_size_normalized = np.fromiter(d.values(), dtype = float)
-print(node_size_normalized)
 node_size_normalized = (node_size_normalized - np.min(node_size_normalized))/(np.max(node_size_normalized) - np.min(node_size_normalized))
 nx.draw_networkx_nodes(
     G=G,
     pos = pos,
-    nodelist=d.keys(),
     node_size = 30 * (1 + node_size_normalized),
     node_color=Feature_color_sub,
     cmap='jet',
@@ -81,7 +87,7 @@ edges = nx.draw_networkx_edges(
     pos = pos,
     edge_color = weights,
     width = 1.5,
-    edge_cmap = plt.cm.Blues,
+    edge_cmap = plt.cm.bwr,
     ax = ax)
         #    %pyrun("plt.xticks([])")
         #    %pyrun("plt.yticks([])")
