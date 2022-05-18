@@ -3,11 +3,23 @@ classdef networkAnalyzer < handle
        spikeTrains
        channels
        channelList
+       distMat
+       filepath
+       pythonpath
+       ChannelList
+       PositionList
     end
     
     methods
-        function na = networkAnalyzer()
-        
+        function na = networkAnalyzer(filepath, pythonpath)
+            na.filepath = filepath;
+            na.pythonpath = pythonpath;
+
+            terminate(pyenv);
+            pyenv('Version', pythonpath);
+            pyenv("ExecutionMode","OutOfProcess")
+            na.pos = 
+
         end
         
         
@@ -16,6 +28,10 @@ classdef networkAnalyzer < handle
             na.channelList = reader.channelList;
         end
         
+        function setChannelPosition2d(na, channelNum, xpos, ypos)
+            Ch
+        end
+
         function bandPass(na, bandRange)
             for i = 1 : length(na.channelList)
                 channelNum = na.channelList(i);
@@ -34,6 +50,13 @@ classdef networkAnalyzer < handle
         end
         
         function dist = spikeDist(na)
+            pyrun("import numpy as np");
+            pyrun("import pyspike");
+
+            % calculate and save entries of score matrix in python.
+            % We just fetch each entry into matlab.
+            pyrun("score_matrix = np.zeros((int(nChannels), int(nChannels)))", nChannels = length(na.channelList))
+
             dist = zeros(length(na.channelList));
             for i = 1 : length(na.channelList)
                 for j = i+1 : length(na.channelList)                    
@@ -44,29 +67,110 @@ classdef networkAnalyzer < handle
                     train_1 = channel_1.spikeTimestamps;
                     train_2 = channel_2.spikeTimestamps;
                     
-                    pyrun("import numpy as np")
-                    pyrun("import pyspike")
-                    pyrun("train_1 = np.array(matlab_array_1)", matlab_array_1 = train_1)
-                    pyrun("train_2 = np.array(matlab_array_2)", matlab_array_2 = train_2)
-                    pyrun("")
+               
                     
+                    pyrun("train_1 = np.array(matlab_array_1)", matlab_array_1 = train_1);
+                    pyrun("train_2 = np.array(matlab_array_2)", matlab_array_2 = train_2);                   
+                    pyrun("train_1 = pyspike.SpikeTrain(train_1, [0, a])", a = nTimestamps);
+                    pyrun("train_2 = pyspike.SpikeTrain(train_2, [0, a])", a = nTimestamps);
                     
-                    "train_1 = pyspike.SpikeTrain(train_1, [0, a])"
-                    "train_2 = pyspike.SpikeTrain(train_2, [0, a])"
+                    pyrun("score_matrix[int(i)-1, int(j)-1] = pyspike.spike_sync(train_1,train_2)", i=i, j=j );
+
+
+                    dist(i,j) = pyrun("d = score_matrix[int(i)-1, int(j)-1]", "d", i=i, j=j );
+                    dist(j,i) = dist(i,j);
                     
-                    dist(i,j) = py.pyspike.spike_sync(train_1,train_2);
-                    dist(j,i) = py.pyspike.spike_sync(train_1,train_2);
-                    
-                    
+            
                 end
             end
             
+            filepath_score_matrix = na.filepath + "/score_matrix.npy"
+            pyrun("np.save(path, score_matrix)", path = filepath_score_matrix);
             heatmap(dist, 'Colormap', cool);
-            ch.distMat = dist;
+            na.distMat = dist;
             
                 
         end
         
+        function louvain(na)
+            command = na.pythonpath + " " + na.filepath + "/pytest.py"
+            system(command)
+%             pyrun("import networkx as nx")
+%             pyrun("import matplotlib.pyplot as plt")
+%             pyrun("import numpy as np")
+%             pyrun("import copy")
+%             pyrun("from networkx.algorithms import community")
+%             pyrun("import matplotlib.animation as animation")
+%             pyrun("import community as lvcm")
+%             
+%             %1.  create network. 
+%             pyrun("G = nx.Graph()")
+%             pyrun("print(G)")
+%             % We set the electrode as a node (e.g., circles in the network map)
+%             pyrun("G.add_nodes_from(range(int(n_nodes)))", n_nodes = length(na.channelList)) %number of nodes = number of channels
+%         
+%             % we set the degree of synchronization between the electrodes as an edge (e.g., lines in the network map).
+%             for i = 1 : length(na.channelList)
+%                 for j = i+1 : length(na.channelList)
+%                     sync_score = na.distMat(i,j);
+%                     if sync_score >= 1/2 %  the links with synchronized scores less than 0.5 were filtered out.
+%                         pyrun("G.add_edge(i, j, weight=w)", i = i, j = j, w = sync_score)
+%                     end
+%                 end %end of for loop j
+%             end % end of for loop i
+%             
+%             % Louvain method
+%             pyrun("partition = lvcm.best_partition(graph=G, partition=None, random_state = 1)")
+%             pyrun("max_k_w = []")
+%             pyrun( ...
+%                 ["for com in set(partition.values()):",
+%                 "    list_nodes = [nodes for nodes in partition.keys() if partition[nodes] == com]",
+%                 "    max_k_w = max_k_w + [list_nodes]"]) % list comprehension. concat [member list] of each community
+% 
+%      
+%            % Make Community Color list """
+%            pyrun("community_num_group = len(max_k_w)")
+%            pyrun("color_list_community = [[] for i in range(len(G.nodes()))]") % list comprehension. empty list of list
+%            pyrun( ...
+%                ["for i in range(len(G.nodes())):",
+%                "    for j in range(community_num_group):",
+%                "        if i in max_k_w[j]:",
+%                "            color_list_community[i] = j"])
+%            
+%            pyrun("print('a')")
+%           % Plot Community           
+%            pyrun("fig, ax = plt.subplots()")
+%            pyrun("print('a')")
+% 
+%            pyrun("edges = G.edges()")
+%            pyrun("weights = [G[u][v]['weight'] for u, v in edges]")
+%            pyrun("Feature_color_sub = color_list_community")
+%             
+%            pyrun("d = dict(G.degree)")
+%            pyrun("print(d)")
+%            pyrun("nx.draw_networkx_nodes(G=G," + ...
+%                "nodelist=d.keys()," + ...
+%                "node_size=[v * 100 for v in d.values()]," + ...
+%                "node_color=Feature_color_sub," + ...
+%                "cmap='jet'," + ...
+%                "vmin=0," + ...
+%                "vmax=community_num_group," + ...
+%                "ax = ax )")
+%            pyrun("nx.draw_networkx_edges(G = G," + ...
+%                "edge_color = weights," + ...
+%                "edge_cmap = plt.cm.Blues," + ...
+%                "ax = ax)")
+%            %pyrun("plt.xticks([])")
+%            %pyrun("plt.yticks([])")
+%            %pyrun("plt.colorbar(im)")
+%            %pyrun("plt.show(block=False)")
+%            pyrun("print(ax)")
+%            pyrun( ...
+%                "fig.savefig('networkfig.png')")
+
+        end
+
+
    
         
 %         function applyBandPassFilter(apm, bandRange)
