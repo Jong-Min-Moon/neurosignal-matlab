@@ -7,7 +7,7 @@ classdef networkAnalyzer < handle
        filepath
        pythonpath
        ChannelList
-       PositionList
+       positions
     end
     
     methods
@@ -25,10 +25,16 @@ classdef networkAnalyzer < handle
         function addChannels(na, reader)
             na.channels = reader.readManyChannelsFromFile(1, 1);
             na.channelList = reader.channelList;
+            na.positions = zeros([length(na.channelList),4]);
+            na.positions(:,1) = 1:length(na.channelList) %1st column: 
+            na.positions(:,2) = na.channelList %2nd column: channel number
+            
         end
         
         function setChannelPosition2d(na, channelNum, xpos, ypos)
-            Ch
+            idx = find( na.positions(:,2) == channelNum);
+            na.positions(idx, 3) = xpos;
+            na.positions(idx, 4) = ypos;
         end
 
         function bandPass(na, bandRange)

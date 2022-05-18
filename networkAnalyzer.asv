@@ -7,7 +7,7 @@ classdef networkAnalyzer < handle
        filepath
        pythonpath
        ChannelList
-       PositionList
+       positions
     end
     
     methods
@@ -25,10 +25,16 @@ classdef networkAnalyzer < handle
         function addChannels(na, reader)
             na.channels = reader.readManyChannelsFromFile(1, 1);
             na.channelList = reader.channelList;
+            na.positions = zeros([length(na.channelList),4]);
+            na.positions(:,1) = 1:length(na.channelList) %1st column: 
+            na.positions(:,2) = na.channelList %2nd column: channel number
+            
         end
         
         function setChannelPosition2d(na, channelNum, xpos, ypos)
-            Ch
+            idx = find( na.positions(,2) == channelNum) 
+            na.positions(idx, 3) = xpos
+            na.positions(idx, 4) = ypos
         end
 
         function bandPass(na, bandRange)
@@ -86,10 +92,14 @@ classdef networkAnalyzer < handle
             
             filepath_score_matrix = na.filepath + "/score_matrix.pkl"
             pyrun("score_matrix = pd.DataFrame(score_matrix)");
+            
+            % set channel numbers as column names of dataframe
             pyrun("score_matrix_index = channelList", channelList = na.channelList);
+            pyrun("score_matrix_index = ['channel' + str(i) for i in score_matrix.index]")
+            pyrun("score_matrix.index = score_matrix_index")
 
-            pyrun("score_matrix.index = channelList", channelList = "channel"+na.channelList);
-            pyrun("score_matrix.to_pickle(path)", path = filepath_score_matrix); % save pd dataframe as pkl
+            % save pd dataframe as pkl
+            pyrun("score_matrix.to_pickle(path)", path = filepath_score_matrix); 
             pyrun("print(score_matrix)")
             heatmap(dist, 'Colormap', cool);
             na.distMat = dist;
