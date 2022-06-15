@@ -343,7 +343,7 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
             exportgraphics(gcf, "step" + i + ".jpg");
          else
              heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
-             exportgraphics(gcf, "step" + i + ".jpg");
+             exportgraphics(gcf, 'step'+i+".jpg");
          end
         
         drawnow;
