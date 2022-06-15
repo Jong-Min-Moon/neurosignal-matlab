@@ -340,8 +340,10 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
          %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
          if displaynumber
             heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap);
+            exportgraphics(gcf, "step" + i + ".jpg");
          else
              heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
+             exportgraphics(gcf, "step" + i + ".jpg");
          end
         
         drawnow;
