@@ -178,7 +178,7 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
 
 
 
-        
+
         function rectify(apm)
           for i = 1 : apm.pixelsNRow
                 for j = 1 : apm.pixelsNCol
@@ -210,86 +210,6 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
                 end
           end
           
-          % get max signal for each of six.
-                      
-          maxRaw                       = apm.pixels{1,1}.rawEnvelopedMax
-          maxFiltered                  = apm.pixels{1,1}.filteredEnvelopedMax  
-          maxSignalRawLowBaseline      = apm.pixels{1,1}.signalRawLowBaselineEnvelopedMax
-          maxSignalRawNoBaseline       = apm.pixels{1,1}.signalRawNoBaselineEnvelopedMax
-          maxSignalFilteredLowBaseline = apm.pixels{1,1}.signalFilteredLowBaselineEnvelopedMax
-          maxSignalFilteredNoBaseline  = apm.pixels{1,1}.signalFilteredNoBaselineEnvelopedMax
-
-          %1. update max raw signal
-for j = 1 : apm.pixelsNRow % loop over 
-    for k = 1 : apm.pixelsNCol
-        maxNow = apm.pixels{j,k}.rawEnvelopedMax;
-        if maxNow > maxRaw
-            maxRaw = maxNow;
-        end 
-    end % loop over columns
-end % loop over rows
-apm.maxRaw = maxRaw %save results
-
-%2. filtered
-  
-  for j = 1 : apm.pixelsNRow % loop over 
-    for k = 1 : apm.pixelsNCol
-        maxNow = apm.pixels{j,k}.filteredEnvelopedMax;
-        if maxNow > maxFiltered
-            maxFiltered = maxNow;
-        end 
-    end % loop over columns
-end % loop over rows
-apm.maxFiltered = maxFiltered %save results
-
-%3
-for j = 1 : apm.pixelsNRow % loop over 
-    for k = 1 : apm.pixelsNCol
-        maxNow = apm.pixels{j,k}.signalRawLowBaselineEnvelopedMax;
-        if maxNow > maxSignalRawLowBaseline
-            maxSignalRawLowBaseline = maxNow;
-        end 
-    end % loop over columns
-end % loop over rows
-apm.maxSignalRawLowBaseline = maxSignalRawLowBaseline %save results
-     
-%4
-for j = 1 : apm.pixelsNRow % loop over 
-    for k = 1 : apm.pixelsNCol
-        maxNow = apm.pixels{j,k}.signalRawNoBaselineEnvelopedMax;
-        if maxNow > maxSignalRawNoBaseline
-            maxSignalRawNoBaseline = maxNow;
-        end 
-    end % loop over columns
-end % loop over rows
-apm.maxSignalRawNoBaseline = maxSignalRawNoBaseline %save results
-         
-
-
-%5
-% update max raw signal
-for j = 1 : apm.pixelsNRow % loop over 
-    for k = 1 : apm.pixelsNCol
-        maxNow = apm.pixels{j,k}.signalFilteredLowBaselineEnvelopedMax;
-        if maxNow > maxSignalFilteredLowBaseline
-            maxSignalFilteredLowBaseline = maxNow;
-        end 
-    end % loop over columns
-end % loop over rows
-apm.maxSignalFilteredLowBaseline = maxSignalFilteredLowBaseline%save results
-
-%6
-% update max raw signal
-for j = 1 : apm.pixelsNRow % loop over 
-    for k = 1 : apm.pixelsNCol
-        maxNow = apm.pixels{j,k}.signalFilteredNoBaselineEnvelopedMax;
-        if maxNow > maxSignalFilteredNoBaseline
-            maxSignalFilteredNoBaseline = maxNow;
-        end 
-    end % loop over columns
-end % loop over rows
-apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline %save results
-
 
         end % end of method envelope
         % 
@@ -365,42 +285,37 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline %save results
     
         % draw a time-varying heatmap
         %%%%%%
-        if datatype == "raw"
-            maxSignal = apm.maxRaw;
-        elseif datatype == "filtered"
-            maxSignal = apm.maxFiltered;
-        elseif datatype == "signalRawLowBaseline"
-            maxSignal = apm.maxSignalRawLowBaseline;
-        elseif datatype == "signalRawNoBaseline"
-            maxSignal = apm.maxSignalRawNoBaseline;
-        elseif datatype == "signalFilteredLowBaseline"
-            maxSignal = apm.maxSignalFilteredLowBaseline;
-        elseif datatype == "signalFilteredNoBaseline"
-            maxSignal = apm.maxSignalFilteredNoBaseline;
-        end %end of if statements
+     
     
     
                                        
                 
                 %%%%%%
-        fprintf("* max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
           
 
+        max_val = max(max(apm.matrices{1}));
+        for i = 2:nSteps
+            max_now = max(max(apm.matrices{i}));
+            if max_now>max_val
+                max_val = max_now;
+            end
+        end
  
-   
+           fprintf("* max signal value = %f, ColorLimits is set w.r.t this value.", max_val)
+
 
         figure;
         for i = 1:nSteps
              %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
              if displaynumber
-                heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap);
+                heatmap(apm.matrices{i}, 'ColorLimits',[0 max_val], 'Colormap', colormap);
                 
                 %frame을 이미지 파일로 저장
                 exportgraphics(gcf, "step" + i + ".jpg");
                 
                 %frame을 비디오에 저장
              else
-                 heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
+                 heatmap(apm.matrices{i}, 'ColorLimits',[0 max_val], 'Colormap', colormap, 'CellLabelColor','none');
 
                  %frame을 이미지 파일로 저장
                  exportgraphics(gcf, "step" + i + ".jpg");
@@ -473,41 +388,39 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline %save results
         
     
         % draw a time-varying heatmap
-        %%%%%%
-        if datatype == "raw"
-            maxSignal = apm.maxRaw;
-        elseif datatype == "filtered"
-            maxSignal = apm.maxFiltered;
-        elseif datatype == "signalRawLowBaseline"
-            maxSignal = apm.maxSignalRawLowBaseline;
-        elseif datatype == "signalRawNoBaseline"
-            maxSignal = apm.maxSignalRawNoBaseline;
-        elseif datatype == "signalFilteredLowBaseline"
-            maxSignal = apm.maxSignalFilteredLowBaseline;
-        elseif datatype == "signalFilteredNoBaseline"
-            maxSignal = apm.maxSignalFilteredNoBaseline;
-        end %end of if statements
+       
     
     
                                        
                 
                 %%%%%%
-        fprintf("* max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
+          max_val = max(max(apm.matrices{1}));
+        for i = 2:nSteps
+            max_now = max(max(apm.matrices{i}));
+            if max_now>max_val
+                max_val = max_now;
+            end
+        end
+ 
+           fprintf("* max signal value = %f, ColorLimits is set w.r.t this value.", max_val)
           
 
- 
+        
+        
+
+
    
 
         figure;
         for i = 1:nSteps
              %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
              if displaynumber
-                heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap);
+                heatmap(apm.matrices{i}, 'ColorLimits',[0 max_val], 'Colormap', colormap);
                 
                 %frame을 비디오에 저장
                 frame(i) = getframe(gcf);
              else
-                 heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
+                 heatmap(apm.matrices{i}, 'ColorLimits',[0 max_val], 'Colormap', colormap, 'CellLabelColor','none');
 
                  %frame을 비디오에 저장
                  frame(i) = getframe(gcf);
