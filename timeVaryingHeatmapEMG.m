@@ -7,6 +7,7 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
         maxSignalFilteredLowBaseline 
         maxSignalFilteredNoBaseline  
         datatypeInfo
+        videoNow
     end
     
     methods
@@ -33,6 +34,7 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
             };
            
            apm.datatypeInfo = containers.Map(keySet,valueSet);
+           fprintf("created an object with %d rows and %d columns", nRow, nCol)
         end
         
         
@@ -168,6 +170,15 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
             apm.startTimeMax = maxNow;
         end
         
+
+
+
+
+
+
+
+
+        
         function rectify(apm)
           for i = 1 : apm.pixelsNRow
                 for j = 1 : apm.pixelsNCol
@@ -175,6 +186,22 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
                 end
           end 
         end
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         
         function envelope(apm, parameter, method)
           for i = 1 : apm.pixelsNRow
@@ -201,7 +228,7 @@ for j = 1 : apm.pixelsNRow % loop over
         end 
     end % loop over columns
 end % loop over rows
-apm.maxRaw = maxRaw; %save results
+apm.maxRaw = maxRaw %save results
 
 %2. filtered
   
@@ -213,7 +240,7 @@ apm.maxRaw = maxRaw; %save results
         end 
     end % loop over columns
 end % loop over rows
-apm.maxFiltered = maxFiltered; %save results
+apm.maxFiltered = maxFiltered %save results
 
 %3
 for j = 1 : apm.pixelsNRow % loop over 
@@ -224,7 +251,7 @@ for j = 1 : apm.pixelsNRow % loop over
         end 
     end % loop over columns
 end % loop over rows
-apm.maxSignalRawLowBaseline = maxSignalRawLowBaseline; %save results
+apm.maxSignalRawLowBaseline = maxSignalRawLowBaseline %save results
      
 %4
 for j = 1 : apm.pixelsNRow % loop over 
@@ -235,7 +262,7 @@ for j = 1 : apm.pixelsNRow % loop over
         end 
     end % loop over columns
 end % loop over rows
-apm.maxSignalRawNoBaseline = maxSignalRawNoBaseline; %save results
+apm.maxSignalRawNoBaseline = maxSignalRawNoBaseline %save results
          
 
 
@@ -249,7 +276,7 @@ for j = 1 : apm.pixelsNRow % loop over
         end 
     end % loop over columns
 end % loop over rows
-apm.maxSignalFilteredLowBaseline = maxSignalFilteredLowBaseline; %save results
+apm.maxSignalFilteredLowBaseline = maxSignalFilteredLowBaseline%save results
 
 %6
 % update max raw signal
@@ -261,20 +288,39 @@ for j = 1 : apm.pixelsNRow % loop over
         end 
     end % loop over columns
 end % loop over rows
-apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
+apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline %save results
 
 
         end % end of method envelope
         % 
         % 
 
-    function makeTimeVaryingHeatmap(apm, timeInterval, datatype, displaynumber, colormap, filename)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    function makeTimeVaryingHeatmap(apm, timeInterval, datatype, displaynumber, colormap)
         msPerTs = apm.pixels{1,1}.msPerTs;
         nTimestamps = apm.pixels{1,1}.nTimestamps;
         stepSize = round(timeInterval / msPerTs);
         nSteps = fix(nTimestamps/stepSize);
-        duration = apm.pixels{1,1}.durationApprox;
-        realTimeFramerate = 60 / (timeInterval/1000);
+        duration = apm.pixels{1,1}.durationApprox; %second
+        realTimeFramerate = (nTimestamps/(timeInterval / msPerTs))/(duration);
+        
+        
+        
+        % numberofFrames = duration * framerate
 
         % print info for the user
         fprintf("* datatype = ")
@@ -284,7 +330,7 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
         fprintf("* Total %d steps\n", nSteps)
         fprintf("* Total timelength = %d seconds\n", duration)
         fprintf("* realtime framerate per second = %d \n", realTimeFramerate)
-    
+        
         % create matrices
         apm.matrices = cell(1, nSteps);
     
@@ -306,7 +352,7 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
                         envelopeValueNow = apm.pixels{j,k}.signalFilteredLowBaselineEnveloped(timestampNow);
                     elseif datatype == "signalFilteredNoBaseline"
                         envelopeValueNow = apm.pixels{j,k}.signalFilteredNoBaselineEnveloped(timestampNow);
-                    end
+                    end %end of if statements
             
                     
                     %%%%%%%%
@@ -330,8 +376,8 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
         elseif datatype == "signalFilteredLowBaseline"
             maxSignal = apm.maxSignalFilteredLowBaseline;
         elseif datatype == "signalFilteredNoBaseline"
-            maxSignal = maxSignalFilteredNoBaseline;
-        end
+            maxSignal = apm.maxSignalFilteredNoBaseline;
+        end %end of if statements
     
     
                                        
@@ -340,47 +386,166 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
         fprintf("* max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
           
 
-    
-
-    
-% figure;
-%     for i = 1:nSteps
-%          %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-%          if displaynumber
-%             heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap);
-%          else
-%              heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
-%          end
-%         
-%         F(i) = getframe(gcf);
-
-
-%     end
+ 
+   
 
         figure;
         for i = 1:nSteps
              %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
              if displaynumber
                 heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap);
+                
+                %frame을 이미지 파일로 저장
                 exportgraphics(gcf, "step" + i + ".jpg");
+                
+                %frame을 비디오에 저장
              else
                  heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
+
+                 %frame을 이미지 파일로 저장
                  exportgraphics(gcf, "step" + i + ".jpg");
-             end
+                 %frame을 비디오에 저장
+             end % end of if statements
             
             drawnow;
+
     
-        end
+        end % end for for loops
+                    
+
+        
+        
+        
+
+    end      % end of this method
+
+        function saveTimeVaryingHeatmap(apm, timeInterval, datatype, displaynumber, colormap, filename)
+        msPerTs = apm.pixels{1,1}.msPerTs;
+        nTimestamps = apm.pixels{1,1}.nTimestamps;
+        stepSize = round(timeInterval / msPerTs);
+        nSteps = fix(nTimestamps/stepSize);
+        duration = apm.pixels{1,1}.durationApprox; %second
+        realTimeFramerate = (nTimestamps/(timeInterval / msPerTs))/(duration);
+        
+        
+        
+        % numberofFrames = duration * framerate
+
+        % print info for the user
+        fprintf("* datatype = ")
+        fprintf(datatype)
+        fprintf(" (" + apm.datatypeInfo(datatype) + ")")
+        fprintf("\n* Each step consists of %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
+        fprintf("* Total %d steps\n", nSteps)
+        fprintf("* Total timelength = %d seconds\n", duration)
+        fprintf("* realtime framerate per second = %d \n", realTimeFramerate)
+        
+        % create matrices
+        apm.matrices = cell(1, nSteps);
     
-%     v = VideoWriter(filename, 'MPEG-4');
+        for i = 1:nSteps % loop over each step
+            matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);%initialize a matrix for this step
+            timestampNow = 1 + (i-1)*stepSize;
+            for j = 1 : apm.pixelsNRow % loop over 
+                for k = 1 : apm.pixelsNCol
+                    %%%%%%%
+                    if datatype == "raw"
+                        envelopeValueNow = apm.pixels{j,k}.rawEnveloped(timestampNow);
+                    elseif datatype == "filtered"
+                        envelopeValueNow = apm.pixels{j,k}.filteredEnveloped(timestampNow);
+                    elseif datatype == "signalRawLowBaseline"
+                        envelopeValueNow = apm.pixels{j,k}.signalRawLowBaselineEnveloped(timestampNow);
+                    elseif datatype == "signalRawNoBaseline"
+                        envelopeValueNow = apm.pixels{j,k}.signalRawNoBaselineEnveloped(timestampNow);
+                    elseif datatype == "signalFilteredLowBaseline"
+                        envelopeValueNow = apm.pixels{j,k}.signalFilteredLowBaselineEnveloped(timestampNow);
+                    elseif datatype == "signalFilteredNoBaseline"
+                        envelopeValueNow = apm.pixels{j,k}.signalFilteredNoBaselineEnveloped(timestampNow);
+                    end %end of if statements
+            
+                    
+                    %%%%%%%%
+                    matrixNow(j, k) = envelopeValueNow;
+                end % loop over columns
+            end % loop over rows
+            apm.matrices{i} = matrixNow;
+        end % loop over steps
+        
+    
+        % draw a time-varying heatmap
+        %%%%%%
+        if datatype == "raw"
+            maxSignal = apm.maxRaw;
+        elseif datatype == "filtered"
+            maxSignal = apm.maxFiltered;
+        elseif datatype == "signalRawLowBaseline"
+            maxSignal = apm.maxSignalRawLowBaseline;
+        elseif datatype == "signalRawNoBaseline"
+            maxSignal = apm.maxSignalRawNoBaseline;
+        elseif datatype == "signalFilteredLowBaseline"
+            maxSignal = apm.maxSignalFilteredLowBaseline;
+        elseif datatype == "signalFilteredNoBaseline"
+            maxSignal = apm.maxSignalFilteredNoBaseline;
+        end %end of if statements
+    
+    
+                                       
+                
+                %%%%%%
+        fprintf("* max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
+          
+
+ 
+   
+
+        figure;
+        for i = 1:nSteps
+             %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
+             if displaynumber
+                heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap);
+                
+                %frame을 비디오에 저장
+                frame(i) = getframe(gcf);
+             else
+                 heatmap(apm.matrices{i}, 'ColorLimits',[0 maxSignal], 'Colormap', colormap, 'CellLabelColor','none');
+
+                 %frame을 비디오에 저장
+                 frame(i) = getframe(gcf);
+             end % end of if statements
+            
+            
+        
+    
+        end % end for for loops
+        v = VideoWriter(filename, 'MPEG-4');
+        v.FrameRate = realTimeFramerate;
+        open(v);
+        writeVideo(v,frame);
+        fprintf("* video duration = %d seconds\n", v.Duration )
+
+        close(v);
+  
+
+        
+        
+        
+        
+
+    end      % end of this method
+        
+    
+
+
+%     
 %     v.FrameRate = realTimeFramerate;
 %     v.Quality = 100;
 % 
 %     open(v);
 %     writeVideo(v, F);
 %     close(v);
+
+
     
-end      
 
         
     
