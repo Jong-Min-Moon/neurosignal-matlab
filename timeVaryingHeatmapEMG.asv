@@ -13,26 +13,24 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
         function apm = timeVaryingHeatmapEMG(nRow, nCol)
            apm@timeVaryingHeatmap(nRow, nCol); %explicitly call the constructor of the superclass   
 
-
-           % save datatype info
            keySet = {
-            'raw',
-            'filtered',
-            'signalRawLowBaseline',
-            'signalRawNoBaseline',
-            'signalFilteredLowBaseline',
-            'signalFilteredNoBaseline'
+            'raw",
+            'filtered",
+            'signalRawLowBaseline",
+            'signalRawNoBaseline",
+            'signalFilteredLowBaseline",
+            'signalFilteredNoBaseline"
             };
            valueSet = {
-            'baseline filtering, butterworth filtering 둘 다 안함',
-            'baseline filtering 하지 않고, butterworth filtering은 함',
-            'baseline filtering하고, butterworth filtering은 안함',
-            'baseline filtering해서 baseline 부분 0으로 만들고, butterworth filtering은 안함',
-            'baseline filtering하고, butterworth filtering 함',
-            'baseline filtering해서 baseline 부분 0으로 만들고, butterworth filtering 함'
-            };
+            "baseline filtering, butterworth filtering 둘 다 안함",
+            "baseline filtering 하지 않고, butterworth filtering은 함",
+            "baseline filtering하고, butterworth filtering은 안함",
+            "baseline filtering해서 baseline 부분 0으로 만들고, butterworth filtering은 안함",
+            "baseline filtering하고, butterworth filtering 함",
+            "baseline filtering해서 baseline 부분 0으로 만들고, butterworth filtering 함"
+            }
            
-           apm.datatypeInfo = containers.Map(keySet,valueSet);
+           apm.datatypeInfo = containers.Map(keySet,valueSet)
         end
         
         
