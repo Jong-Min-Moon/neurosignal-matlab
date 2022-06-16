@@ -24,12 +24,12 @@ classdef timeVaryingHeatmapEMG < timeVaryingHeatmap
             'signalFilteredNoBaseline'
             };
            valueSet = {
-            'baseline filtering, butterworth filtering 둘 다 안함',
+            'baseline filtering 하지 않음, butterworth filtering도 하지 않음',
             'baseline filtering 하지 않고, butterworth filtering은 함',
-            'baseline filtering하고, butterworth filtering은 안함',
-            'baseline filtering해서 baseline 부분 0으로 만들고, butterworth filtering은 안함',
-            'baseline filtering하고, butterworth filtering 함',
-            'baseline filtering해서 baseline 부분 0으로 만들고, butterworth filtering 함'
+            'baseline filtering 하고, butterworth filtering은 안함',
+            'baseline filtering 해서 baseline 부분 0으로 만들고, butterworth filtering은 안함',
+            'baseline filtering 하고, butterworth filtering 함',
+            'baseline filtering 해서 baseline 부분 0으로 만들고, butterworth filtering 함'
             };
            
            apm.datatypeInfo = containers.Map(keySet,valueSet);
@@ -277,13 +277,13 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
         realTimeFramerate = 60 / (timeInterval/1000);
 
         % print info for the user
-        fprintf("datatype = ")
+        fprintf("* datatype = ")
         fprintf(datatype)
-        fprintf("\n" + apm.datatypeInfo(datatype))
-        fprintf("\nstep size = %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
-        fprintf("Total %d steps\n", nSteps)
-        fprintf("length = %d seconds\n", duration)
-        fprintf("realtime framerate per second = %d \n", realTimeFramerate)
+        fprintf(" (" + apm.datatypeInfo(datatype) + ")")
+        fprintf("\n* Each step consists of %d timestamps = %f miliseconds\n", stepSize, stepSize*msPerTs)
+        fprintf("* Total %d steps\n", nSteps)
+        fprintf("* Total timelength = %d seconds\n", duration)
+        fprintf("* realtime framerate per second = %d \n", realTimeFramerate)
     
         % create matrices
         apm.matrices = cell(1, nSteps);
@@ -337,7 +337,7 @@ apm.maxSignalFilteredNoBaseline = maxSignalFilteredNoBaseline; %save results
                                        
                 
                 %%%%%%
-        fprintf("max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
+        fprintf("* max signal value = %f, ColorLimits is set w.r.t this value.", maxSignal)
           
 
     
