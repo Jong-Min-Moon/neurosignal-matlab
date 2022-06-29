@@ -1,0 +1,54 @@
+\documentclass[a4papaer, 11pt]{article}
+%패키지
+\usepackage[scale=0.75,twoside,bindingoffset=5mm]{geometry}
+\usepackage{kotex} %한글 사용
+\usepackage{amsmath} %align 등 기능
+
+\begin{document}
+\title{Description of signal processing methods and descriptive statistics
+\author{응용통계학과 석사과정 문종민\\
+}
+}
+
+
+\maketitle
+\subsubsection{Preprocessing of the EMG signal}
+
+We used Matlab
+(Mathworks, Natick, MA, USA).
+to process the signal in offline.
+
+\paragraph{High pass and notch filter}
+To minimize the shift of the baseline,
+3rd order Butterworth high pass filter was applied to the signal at 30Hz.
+For the purpose of noise reduction,
+we applied 5th order Butterworth notch filter at 60Hz.
+For this step of processing,
+we used the \texttt{butter} function in the Signal Processing Toolbox™ of Matlab.
+
+\paragraph{Full-wave rectification}
+Then we applied full-wave rectification to the signal, by taking absolute value of the signal data.
+
+\paragraph{gernetation of envelopes}
+We generated EMG envelopes of the rectified signal
+by applying cubic spline interpolation over local maxima separated by at least \textit{[parameter used by the researcher e.g. 200, 350...]} samples. For this step we used \texttt{envelope} function with 'peak' option in the Signal Processing Toolbox™ of Matlab.
+
+
+\subsubsection{Descriptive statistics}
+
+\paragraph{Mean peak to peak}
+This is average of difference between all local maxima and local minima of the signal. To find the local maxima and minima, we used \texttt{findpeaks} function which finds the local maxima of the signal. We multiplied $-1$ to the signal data and applied the \texttt{findpeaks} function to get the local maxima. Local maximas and minimas whose absolute value is too small were not used in the calculation, and the threshold value(e.g. 0.2) was chosen heuristically.
+\paragraph{Mean RMS(or mean absolute value)}Mean RMS is the arithmetic mean of the absolute value of the signal within a specified range.
+
+\paragraph{Signal to noise ratio(SNR)}
+With pre-specified signal interval $A$ and noise interval $B$,
+we calculate root mean square(RMS) of each interval.
+Let $Psignal = RMS(A)$ and $Pnoise = RMS(B)$. Then we define as
+\begin{align*}
+	SNR = k * log_a(Psignal / Pnoise)
+\end{align*}
+Where k is chosen by the researcher and $a \in \{2, e, 10\}$.
+To calculate the RMS, We used \texttt{rms} function in the Signal Processing Toolbox™ of Matlab.
+
+
+\end{document}
