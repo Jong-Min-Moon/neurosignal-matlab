@@ -37,7 +37,7 @@ by applying cubic spline interpolation over local maxima separated by at least \
 \subsubsection{Descriptive statistics}
 
 \paragraph{Mean peak to peak}
-This is average of difference between all local maxima and local minima of the signal. To find the local maxima and minima, we used \texttt{findpeaks} function which finds the local maxima of the signal. We multiplied $-1$ to the signal data and applied the \texttt{findpeaks} function to get the local maxima. Local maximas and minimas whose absolute value is too small were not used in the calculation, and the threshold value was chosen heuristically.
+This is average of difference between all local maxima and local minima of the signal. To find the local maxima and minima, we used \texttt{findpeaks} function which finds the local maxima of the signal. We multiplied $-1$ to the signal data and applied the \texttt{findpeaks} function to get the local maxima. Local maximas and minimas whose absolute value is too small were not used in the calculation, and the threshold value(e.g. 0.2) was chosen heuristically.
 \paragraph{Mean RMS(or mean absolute value)}Mean RMS is the arithmetic mean of the absolute value of the signal within a specified range.
 
 \paragraph{Signal to noise ratio(SNR)}
