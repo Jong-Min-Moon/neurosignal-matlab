@@ -65,26 +65,40 @@ classdef networkAnalyzer < handle
 
             dist = zeros(length(na.channelList));
             for i = 1 : length(na.channelList)
-                for j = i+1 : length(na.channelList)                    
+                for j = i+1 : length(na.channelList)
+
                     channel_1 = na.channels(na.channelList(i));
                     channel_2 = na.channels(na.channelList(j));
                     nTimestamps = channel_1.nTimestamps;
+                        
+                    if channel_1.nSpikes  <= 1
+                        dist(i,j) = NaN;
+                        dist(j,i) = NaN;
+                        pyrun("score_matrix[int(i)-1, int(j)-1] = np.NaN", i=i, j=j );
+                        pyrun("score_matrix[int(j)-1, int(i)-1] = np.NaN", i=i, j=j );
+                    elseif channel_2.nSpikes <= 1
+                        dist(i,j) = NaN;
+                        dist(j,i) = NaN;
+                        pyrun("score_matrix[int(i)-1, int(j)-1] = np.NaN", i=i, j=j );
+                        pyrun("score_matrix[int(j)-1, int(i)-1] = np.NaN", i=i, j=j );
+                    else
+                        train_1 = channel_1.spikeTimestamps;
+                        train_2 = channel_2.spikeTimestamps;
+                        
+                   
+                        
+                        pyrun("train_1 = np.array(matlab_array_1)", matlab_array_1 = train_1);
+                        pyrun("train_2 = np.array(matlab_array_2)", matlab_array_2 = train_2);                   
+                        pyrun("train_1 = pyspike.SpikeTrain(train_1, [0, a])", a = nTimestamps);
+                        pyrun("train_2 = pyspike.SpikeTrain(train_2, [0, a])", a = nTimestamps);
+                        
+                        pyrun("score_matrix[int(i)-1, int(j)-1] = pyspike.spike_sync(train_1,train_2)", i=i, j=j );
+                        pyrun("score_matrix[int(j)-1, int(i)-1] = score_matrix[int(i)-1, int(j)-1]", i=i, j=j );
 
-                    train_1 = channel_1.spikeTimestamps;
-                    train_2 = channel_2.spikeTimestamps;
-                    
-               
-                    
-                    pyrun("train_1 = np.array(matlab_array_1)", matlab_array_1 = train_1);
-                    pyrun("train_2 = np.array(matlab_array_2)", matlab_array_2 = train_2);                   
-                    pyrun("train_1 = pyspike.SpikeTrain(train_1, [0, a])", a = nTimestamps);
-                    pyrun("train_2 = pyspike.SpikeTrain(train_2, [0, a])", a = nTimestamps);
-                    
-                    pyrun("score_matrix[int(i)-1, int(j)-1] = pyspike.spike_sync(train_1,train_2)", i=i, j=j );
-
-
-                    dist(i,j) = pyrun("d = score_matrix[int(i)-1, int(j)-1]", "d", i=i, j=j );
-                    dist(j,i) = dist(i,j);
+    
+                        dist(i,j) = pyrun("d = score_matrix[int(i)-1, int(j)-1]", "d", i=i, j=j );
+                        dist(j,i) = dist(i,j);
+                    end
                     
             
                 end
