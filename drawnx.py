@@ -17,7 +17,7 @@ n_nodes = distMat.shape[1] # number of nodes = number of channels
 G = nx.Graph()
 
 # We set the electrode as a node (e.g., circles in the network map)
-channel_list = ["channel{}".format(int(i)) for i in positions[0]]
+channel_list = ["{}".format(int(i)) for i in positions[0]]
 #print(channel_list)
 #G.add_nodes_from(channel_list)
 
@@ -75,11 +75,18 @@ node_size_normalized = (node_size_normalized - np.min(node_size_normalized))/(np
 nx.draw_networkx_nodes(
     G=G,
     pos = pos,
-    node_size = 30 * (1 + node_size_normalized),
+    node_size = 150 * (1 + node_size_normalized),
     node_color=Feature_color_sub,
-    cmap='jet',
+    cmap='gist_ncar',
     vmin=0,
     vmax=community_num_group,
+    ax = ax 
+    )
+
+nx.draw_networkx_labels(
+    G=G,
+    pos = pos,
+    font_color = "white",
     ax = ax )
 
 edges = nx.draw_networkx_edges(
