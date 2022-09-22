@@ -7,11 +7,13 @@ import matplotlib.animation as animation
 import community as lvcm
 import scipy
 import pickle
-import pandas as pd           
+import pandas as pd   
+import os
+pwd = os.getcwd()
 #1.  create network.
-distMat = np.load("score_matrix.npy")
+distMat = np.load(pwd + "/score_matrix.npy")
 #print(distMat)
-positions = pd.read_pickle("positions.pkl")
+positions = pd.read_pickle(pwd + "/positions.pkl")
 #print(positions)
 n_nodes = distMat.shape[1] # number of nodes = number of channels
 G = nx.Graph()
