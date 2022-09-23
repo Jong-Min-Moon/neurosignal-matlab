@@ -130,7 +130,7 @@ classdef networkAnalyzer < handle
             na.syncScores = array2table( ...
                 dist, 'VariableNames',cellstr("node" + (1:na.nChannels)), 'RowNames', cellstr("node" + (1:na.nChannels)))
   
-            na.nConnects = array2table(nansum((dist>0.5),2), 'VariableNames', {'number of connected'}, 'RowNames',cellstr("node" + (1:na.nChannels)));
+            na.nConnects = array2table(nansum((dist>0.5),2), 'VariableNames', cellstr, 'RowNames',cellstr("node" + (1:na.nChannels)));
             
                 
         end
