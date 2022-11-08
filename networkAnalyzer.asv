@@ -141,20 +141,18 @@ classdef networkAnalyzer < handle
            
             %node size
             pyrun("node_sizes = np.array([int(basic_size), int(basic_size)])", basic_size = basic_size, multiplier = multiplier);
-            filepath_node_sizes = na.filepath + "/node_sizes.npy";
+            filepath_node_sizes = na.filepath + "/node_sizes.npy"
             pyrun("np.save(path, node_sizes)", path = filepath_node_sizes);
 
             %color
             pyrun("colors = pd.Series([colorscale_edge, colorscale_node])", colorscale_edge = colorscale_edge, colorscale_node = colorscale_node);
-            filepath_colors = na.filepath + "/colors.pkl";
+            filepath_colors = na.filepath + "/colors.pkl"
             pyrun("colors.to_pickle(path)", path = filepath_colors);
 
             % lim
-            pyrun("lims = pd.Series([degree_lim_low, degree_lim_high, edge_lim_low, edge_lim_high])", degree_lim_low = degree_lim(1), degree_lim_high = degree_lim(2), edge_lim_low = edge_lim(1), edge_lim_high = edge_lim(2));
-            filepath_lims = na.filepath + "/lims.pkl";
-            pyrun("lims.to_pickle(path)", path = filepath_lims);
-
-
+            pyrun("colors = pd.Series([colorscale_edge, colorscale_node])", colorscale_edge = colorscale_edge, colorscale_node = colorscale_node);
+            filepath_colors = na.filepath + "/colors.pkl"
+            pyrun("colors.to_pickle(path)", path = filepath_colors);
             command = na.pythonpath + " " + na.filepath + "/drawnx.py";
             system(command)
 %             pyrun("import networkx as nx")

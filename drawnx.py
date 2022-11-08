@@ -15,11 +15,32 @@ import plotly.graph_objects as go
 pwd = os.getcwd()
 #1.  create network.
 distMat = np.load(pwd + "/score_matrix.npy")
-#print(distMat)
+
 positions = pd.read_pickle(pwd + "/positions.pkl")
-#print(positions)
+
 n_nodes = distMat.shape[1] # number of nodes = number of channels
 G = nx.Graph()
+
+#node_sizes
+basic_size, multiplier = np.load(pwd + "/node_sizes.npy")
+
+# colors
+colors = pd.read_pickle(pwd + "/colors.pkl")
+colorscale_edge = colors.iloc[0]
+colorscale_node = colors.iloc[1]
+
+
+
+# colors
+lims = pd.read_pickle(pwd + "/lims.pkl")
+lim_degree_low  = lims.iloc[0]
+lim_degree_high = lims.iloc[1]
+lim_edge_low    = lims.iloc[2]
+lim_edge_high   = lims.iloc[3]
+
+
+
+
 
 # We set the electrode as a node (e.g., circles in the network map)
 channel_list = ["{}".format(int(i)) for i in positions[0]]
@@ -42,8 +63,7 @@ for i in range(n_nodes):
     for j in range(i+1, n_nodes):
         sync_score = distMat[i,j]
         # the links with synchronized scores less than 0.5 were filtered out.
-        if sync_score >= 1/2:
-            
+        if (sync_score >= 1/2):
             G.add_edge(channel_list[i], channel_list[j], weight = sync_score)
 
 
@@ -60,58 +80,95 @@ for com in set(partition.values()):
 
      
 # Make Community Color list
+# APPLY NODE FILTERING!
+d = dict(G.degree)
+degree_values = list(d.values())
 community_num_group = len(max_k_w)
-color_list_community = [[] for i in range(len(G.nodes()))] # list comprehension. empty list of list
+color_list_community = [[] for i in range(len(G.nodes())) 
+if (degree_values[i]>=lim_degree_low) and (degree_values[i]<=lim_degree_high)
+] # list comprehension. empty list of list
 
-for i in range(len(G.nodes())):
-   for j in range(community_num_group):
-       if i in max_k_w[j]:
-           color_list_community[i] = j
-           
+for i in range(len(color_list_community)):
+    for j in range(community_num_group):
+        if i in max_k_w[j]:
+            color_list_community[i] = j
+
+Feature_color_sub = color_list_community          
 
 
 
 edges = G.edges()
 weights = [G[u][v]['weight'] for u, v in edges]
-Feature_color_sub = color_list_community
 
+
+#degree = node size
 d = dict(G.degree)
-node_size_normalized = np.fromiter(d.values(), dtype = float)
+degree_values = d.values()
+node_size_normalized = np.fromiter(degree_values, dtype = float)
+degree_values = list(d.values())
 node_size_normalized = (node_size_normalized - np.min(node_size_normalized))/(np.max(node_size_normalized) - np.min(node_size_normalized))
 
 
+
+
+
+
+
 #we need to seperate the X,Y,Z coordinates for Plotly
-x_nodes = [ pos[ str(i+1) ][0] for i in range(len(pos)) ]# x-coordinates of nodes
-y_nodes = [ pos[ str(i+1) ][1] for i in range(len(pos)) ]# y-coordinates
-z_nodes = [ pos[ str(i+1) ][2] for i in range(len(pos)) ]# z-coordinates
+x_nodes = [ pos[ str(i+1) ][0] for i in range(len(pos)) if (degree_values[i]>=lim_degree_low) and (degree_values[i]<=lim_degree_high)]# x-coordinates of nodes
+y_nodes = [ pos[ str(i+1) ][1] for i in range(len(pos)) if (degree_values[i]>=lim_degree_low) and (degree_values[i]<=lim_degree_high)]# y-coordinates
+z_nodes = [ pos[ str(i+1) ][2] for i in range(len(pos)) if (degree_values[i]>=lim_degree_low) and (degree_values[i]<=lim_degree_high)]# z-coordinates
+
+
+
+
+
 
 #we  need to create lists that contain the starting and ending coordinates of each edge.
 edge_list = G.edges()
+
 x_edges=[]
 y_edges=[]
 z_edges=[]
 
+weights = [G[u][v]['weight'] for u, v in edge_list if (G[u][v]['weight'] >= lim_edge_low) and (G[u][v]['weight'] <= lim_edge_high) and (int(d[u]) >= int(lim_degree_low)) and (int(d[u]) <= int(lim_degree_high)) and (int(d[v]) >= int(lim_degree_low)) and (int(d[v]) <= int(lim_degree_high))]
 #need to fill these with all of the coordiates
-for edge in edge_list:
+
+for u,v in edge_list:
     #format: [beginning,ending,None]
-    x_coords = [pos[edge[0]][0],pos[edge[1]][0],None]
-    x_edges += x_coords
+    sync_score_now = G[u][v]['weight']
+    if (sync_score_now >= lim_edge_low) and (sync_score_now <= lim_edge_high) and (int(d[u]) >= int(lim_degree_low)) and (int(d[u]) <= int(lim_degree_high)) and (int(d[v]) >= int(lim_degree_low)) and (int(d[v]) <= int(lim_degree_high)):
+        x_coords = [
+            pos[ u ][0],
+            pos[ v ][0],
+            None
+            ]
+        x_edges += x_coords
 
-    y_coords = [pos[edge[0]][1],pos[edge[1]][1],None]
-    y_edges += y_coords
+        y_coords = [pos[u][1],pos[v][1],None]
+        y_edges += y_coords
 
-    z_coords = [pos[edge[0]][2],pos[edge[1]][2],None]
-    z_edges += z_coords
+        z_coords = [pos[u][2],pos[v][2],None]
+        z_edges += z_coords
+
+
+
+
+
+
+
+
+
 
 trace_edges = go.Scatter3d(
     name = "Edges",
     x=x_edges,
-                        y=y_edges,
-                        z=z_edges,
+    y=y_edges,
+    z=z_edges,
                         mode='lines',
                         line=dict(
                             color= weights,
-                            colorscale=['blue','red'],
+                            colorscale= colorscale_edge,
                             width=4,
                             colorbar=dict(thickness=20, title= "edges", xanchor = "left")                    
 ),
@@ -126,9 +183,9 @@ trace_nodes = go.Scatter3d(
     mode='markers',
                         marker=dict(
                             symbol='circle',
-                                    size= 10 + 20 * (1 + node_size_normalized),
+                                    size= basic_size + multiplier * (1 + node_size_normalized),
                                     color=Feature_color_sub, #color the nodes according to their community
-                                    colorscale=['lightgreen','magenta'], #either green or mageneta
+                                    colorscale=colorscale_node, #either green or mageneta
                                     line=dict(color='black', width=0.5),
                                     colorbar=dict(thickness=20, title= "community", xanchor = "right")
                                     ),
@@ -148,11 +205,12 @@ layout = go.Layout(title="Community structure of the electrodes",
                 width=650,
                 height=625,
                 showlegend=False,
-                scene=dict(xaxis=dict(axis),
-                        yaxis=dict(axis),
-                        zaxis=dict(axis),
-                        ),
-                margin=dict(t=100),
+                #scene=dict(
+                #    xaxis=dict(axis),
+                #    yaxis=dict(axis),
+                #    zaxis=dict(axis),
+               #         ),
+                margin=dict(t=80),
                 hovermode='closest')
 
 data = [trace_edges, trace_nodes]
