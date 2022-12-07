@@ -135,7 +135,7 @@ classdef networkAnalyzer < handle
                 
         end
         
-        function louvain(na, basic_size, multiplier, colorscale_edge, colorscale_node, degree_lim, edge_lim)
+        function louvain(na, basic_size, multiplier, colorscale_edge, colorscale_node, degree_lim, edge_lim, thres)
             pyrun("import numpy as np");
             pyrun("import pandas as pd");
            
@@ -149,8 +149,8 @@ classdef networkAnalyzer < handle
             filepath_colors = na.filepath + "/colors.pkl";
             pyrun("colors.to_pickle(path)", path = filepath_colors);
 
-            % lim
-            pyrun("lims = pd.Series([degree_lim_low, degree_lim_high, edge_lim_low, edge_lim_high])", degree_lim_low = degree_lim(1), degree_lim_high = degree_lim(2), edge_lim_low = edge_lim(1), edge_lim_high = edge_lim(2));
+            % lim and threshold
+            pyrun("lims = pd.Series([degree_lim_low, degree_lim_high, edge_lim_low, edge_lim_high, thres])", degree_lim_low = degree_lim(1), degree_lim_high = degree_lim(2), edge_lim_low = edge_lim(1), edge_lim_high = edge_lim(2), thres=thres);
             filepath_lims = na.filepath + "/lims.pkl";
             pyrun("lims.to_pickle(path)", path = filepath_lims);
 

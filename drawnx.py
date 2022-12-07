@@ -37,15 +37,14 @@ lim_degree_low  = lims.iloc[0]
 lim_degree_high = lims.iloc[1]
 lim_edge_low    = lims.iloc[2]
 lim_edge_high   = lims.iloc[3]
-
+thres = lims.iloc[4]
 
 
 
 
 # We set the electrode as a node (e.g., circles in the network map)
-channel_list = ["{}".format(int(i)) for i in positions[0]]
-#print(channel_list)
-#G.add_nodes_from(channel_list)
+channel_list = ["{}".format(int(i)) for i in positions[0]] #list of strings
+
 
 #pos = {}
 for i in range(len(channel_list)):
@@ -56,14 +55,15 @@ for i in range(len(channel_list)):
     G.add_node(channel_list[i], pos = position_now )
     #pos[channel_list[i]] = position_now
 pos=nx.get_node_attributes(G,'pos')
-#print(pos)
+
+
 # we set the degree of synchronization between the electrodes as an edge
 # (e.g., lines in the network map).
 for i in range(n_nodes):
     for j in range(i+1, n_nodes):
         sync_score = distMat[i,j]
         # the links with synchronized scores less than 0.5 were filtered out.
-        if (sync_score >= 1/2):
+        if (sync_score >= thres):
             G.add_edge(channel_list[i], channel_list[j], weight = sync_score)
 
 
