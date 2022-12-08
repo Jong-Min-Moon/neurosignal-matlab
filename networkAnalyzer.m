@@ -11,6 +11,7 @@ classdef networkAnalyzer < handle
        positions
        syncScores
        nConnects
+       thres
     end
     
     methods
@@ -64,7 +65,8 @@ classdef networkAnalyzer < handle
             end
         end
         
-        function dist = spikeDist(na)
+        function dist = spikeDist(na, thres)
+            na.thres = thres
             pyrun("import numpy as np");
             pyrun("import pandas as pd");
             pyrun("import pyspike");
@@ -130,12 +132,12 @@ classdef networkAnalyzer < handle
             na.syncScores = array2table( ...
                 dist, 'VariableNames',cellstr("node" + (1:na.nChannels)), 'RowNames', cellstr("node" + (1:na.nChannels)))
   
-            na.nConnects = array2table(nansum((dist>0.5),2), 'VariableNames', {'number of connected'}, 'RowNames',cellstr("node" + (1:na.nChannels)));
+            na.nConnects = array2table(nansum((dist>na.thres),2), 'VariableNames', {'number of connected'}, 'RowNames',cellstr("node" + (1:na.nChannels)));
             
                 
         end
         
-        function louvain(na, basic_size, multiplier, colorscale_edge, colorscale_node, degree_lim, edge_lim)
+        function louvain(na, basic_size, multiplier, colorscale_edge, colorscale_node, degree_lim, edge_lim, edge_colorbar_lim, community_colorbar_max, display_community_color, display_degree, display_sync_score)
             pyrun("import numpy as np");
             pyrun("import pandas as pd");
            
@@ -149,11 +151,15 @@ classdef networkAnalyzer < handle
             filepath_colors = na.filepath + "/colors.pkl";
             pyrun("colors.to_pickle(path)", path = filepath_colors);
 
-            % lim
-            pyrun("lims = pd.Series([degree_lim_low, degree_lim_high, edge_lim_low, edge_lim_high])", degree_lim_low = degree_lim(1), degree_lim_high = degree_lim(2), edge_lim_low = edge_lim(1), edge_lim_high = edge_lim(2));
+            % lim and threshold
+            pyrun("lims = pd.Series([degree_lim_low, degree_lim_high, edge_lim_low, edge_lim_high, thres, community_max, edge_color_lim_low, edge_color_lim_high])", degree_lim_low = degree_lim(1), degree_lim_high = degree_lim(2), edge_lim_low = edge_lim(1), edge_lim_high = edge_lim(2), thres=na.thres, community_max = community_colorbar_max, edge_color_lim_low = edge_colorbar_lim(1), edge_color_lim_high = edge_colorbar_lim(2));
             filepath_lims = na.filepath + "/lims.pkl";
             pyrun("lims.to_pickle(path)", path = filepath_lims);
 
+            % display components or not
+            pyrun("display_or_not = pd.Series([display_community_color, display_degree, display_sync_score])", display_community_color = display_community_color, display_degree = display_degree, display_sync_score = display_sync_score);
+            filepath_display_or_not = na.filepath + "/display_or_not.pkl";
+            pyrun("display_or_not.to_pickle(path)", path = filepath_display_or_not);
 
             command = na.pythonpath + " " + na.filepath + "/drawnx.py";
             system(command)

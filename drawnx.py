@@ -11,6 +11,9 @@ import pandas as pd
 import os
 import plotly.graph_objects as go
 
+################################################
+################################################
+# load data
 
 pwd = os.getcwd()
 #1.  create network.
@@ -37,15 +40,24 @@ lim_degree_low  = lims.iloc[0]
 lim_degree_high = lims.iloc[1]
 lim_edge_low    = lims.iloc[2]
 lim_edge_high   = lims.iloc[3]
+thres = lims.iloc[4]
+community_max = lims.iloc[5]
+lim_color_edge_low    = lims.iloc[6]
+lim_color_edge_high   = lims.iloc[7]
 
 
+# display_or_not
+display_or_not = pd.read_pickle(pwd + "/display_or_not.pkl")
+display_community_color  = display_or_not.iloc[0]
+display_degree = display_or_not.iloc[1]
+display_sync_score    = display_or_not.iloc[2]
 
-
+################################################
+################################################
 
 # We set the electrode as a node (e.g., circles in the network map)
-channel_list = ["{}".format(int(i)) for i in positions[0]]
-#print(channel_list)
-#G.add_nodes_from(channel_list)
+channel_list = ["{}".format(int(i)) for i in positions[0]] #list of strings
+
 
 #pos = {}
 for i in range(len(channel_list)):
@@ -56,14 +68,15 @@ for i in range(len(channel_list)):
     G.add_node(channel_list[i], pos = position_now )
     #pos[channel_list[i]] = position_now
 pos=nx.get_node_attributes(G,'pos')
-#print(pos)
+
+
 # we set the degree of synchronization between the electrodes as an edge
 # (e.g., lines in the network map).
 for i in range(n_nodes):
     for j in range(i+1, n_nodes):
         sync_score = distMat[i,j]
         # the links with synchronized scores less than 0.5 were filtered out.
-        if (sync_score >= 1/2):
+        if (sync_score >= thres):
             G.add_edge(channel_list[i], channel_list[j], weight = sync_score)
 
 
@@ -93,9 +106,16 @@ for i in range(len(color_list_community)):
         if i in max_k_w[j]:
             color_list_community[i] = j
 
-Feature_color_sub = color_list_community          
+########################################################
+########################################################
+# 2022.12.08
+Feature_color_sub = np.array(color_list_community)+1  # cluster num = 1, 2, 3, .... not 0 , 1, 2, ...
 
+cluster_membership_pd = pd.DataFrame({"node" : np.arange(1,len(Feature_color_sub)+1), "community" : Feature_color_sub})
+cluster_membership_pd.groupby("community").agg(list).to_csv("community_info.csv")  
 
+########################################################
+########################################################
 
 edges = G.edges()
 weights = [G[u][v]['weight'] for u, v in edges]
@@ -155,24 +175,56 @@ for u,v in edge_list:
 
 
 
+#####################################
+#####################################
+# 22.12.08. on/off features
+# community color
+if display_degree:
+    node_size= basic_size + multiplier * (1 + node_size_normalized)
+if not display_degree:
+    node_size= basic_size + multiplier * (0 * (1 + node_size_normalized) + 1)
 
+# node color
+if display_community_color:
+    node_dict = dict(
+                            symbol='circle',
+                                    size= node_size,
+                                    cmin= 1,
+                                    cmax = community_max,
+                                    color=Feature_color_sub, #color the nodes according to their community
+                                    colorscale=colorscale_node, #either green or mageneta
+                                    line=dict(color='black', width=0.5),
+                                    colorbar=dict(thickness=20, title= "community", xanchor = "right")
+                                    )
+if not display_community_color:
+    node_dict = dict(
+        symbol='circle',
+        size= node_size,
+        color = "yellow",
+        line=dict(color='black', width=0.5),
+                                    )
 
-
-
+# edge color
+if display_sync_score:
+    linedict  = dict(
+                            cmin = lim_color_edge_low,
+                            cmax = lim_color_edge_high,
+                            color= weights,
+                            colorscale= colorscale_edge,
+                            width=4,
+                            colorbar=dict(thickness=20, title= "edges", xanchor = "left")                    
+)
+if not display_sync_score:
+    linedict = dict(width=4)
 
 trace_edges = go.Scatter3d(
     name = "Edges",
     x=x_edges,
     y=y_edges,
     z=z_edges,
-                        mode='lines',
-                        line=dict(
-                            color= weights,
-                            colorscale= colorscale_edge,
-                            width=4,
-                            colorbar=dict(thickness=20, title= "edges", xanchor = "left")                    
-),
-                        hoverinfo='none')
+    mode='lines',
+    line=linedict,
+    hoverinfo='none')
 
 #create a trace for the nodes
 trace_nodes = go.Scatter3d(
@@ -181,15 +233,8 @@ trace_nodes = go.Scatter3d(
     y=y_nodes,
     z=z_nodes,
     mode='markers',
-                        marker=dict(
-                            symbol='circle',
-                                    size= basic_size + multiplier * (1 + node_size_normalized),
-                                    color=Feature_color_sub, #color the nodes according to their community
-                                    colorscale=colorscale_node, #either green or mageneta
-                                    line=dict(color='black', width=0.5),
-                                    colorbar=dict(thickness=20, title= "community", xanchor = "right")
-                                    ),
-                        text=Feature_color_sub,
+    marker = node_dict,
+                        text=[f"Node {i+1} belongs to community {Feature_color_sub[i]}" for i in range(len(Feature_color_sub))],
                         hoverinfo='text',
                         showlegend = True
                         )
