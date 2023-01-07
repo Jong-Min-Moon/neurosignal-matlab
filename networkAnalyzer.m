@@ -31,9 +31,10 @@ classdef networkAnalyzer < handle
             na.channelList = reader.channelList;
             na.positions = zeros([length(na.channelList),4]);
             na.positions(:,1) = 1:length(na.channelList) %1st column: 
-            na.positions(:,2) = na.channelList %2nd column: channel number
-            
+            na.positions(:,2) = na.channelList %2nd column: channel number 
         end
+
+
         
         function setChannelPosition2d(na, channelNum, xpos, ypos)
             idx = find( na.positions(:,2) == channelNum);
@@ -132,9 +133,7 @@ classdef networkAnalyzer < handle
             na.syncScores = array2table( ...
                 dist, 'VariableNames',cellstr("node" + (1:na.nChannels)), 'RowNames', cellstr("node" + (1:na.nChannels)))
   
-            na.nConnects = array2table(nansum((dist>na.thres),2), 'VariableNames', {'number of connected'}, 'RowNames',cellstr("node" + (1:na.nChannels)));
-            
-                
+            na.nConnects = array2table(nansum((dist>na.thres),2), 'VariableNames', {'number of connected'}, 'RowNames',cellstr("node" + (1:na.nChannels)));              
         end
         
         function louvain(na, basic_size, multiplier, colorscale_edge, colorscale_node, degree_lim, edge_lim, edge_colorbar_lim, community_colorbar_max, display_community_color, display_degree, display_sync_score)
@@ -163,229 +162,10 @@ classdef networkAnalyzer < handle
 
             command = na.pythonpath + " " + na.filepath + "/drawnx.py";
             system(command)
-%             pyrun("import networkx as nx")
-%             pyrun("import matplotlib.pyplot as plt")
-%             pyrun("import numpy as np")
-%             pyrun("import copy")
-%             pyrun("from networkx.algorithms import community")
-%             pyrun("import matplotlib.animation as animation")
-%             pyrun("import community as lvcm")
-%             
-%             %1.  create network. 
-%             pyrun("G = nx.Graph()")
-%             pyrun("print(G)")
-%             % We set the electrode as a node (e.g., circles in the network map)
-%             pyrun("G.add_nodes_from(range(int(n_nodes)))", n_nodes = length(na.channelList)) %number of nodes = number of channels
-%         
-%             % we set the degree of synchronization between the electrodes as an edge (e.g., lines in the network map).
-%             for i = 1 : length(na.channelList)
-%                 for j = i+1 : length(na.channelList)
-%                     sync_score = na.distMat(i,j);
-%                     if sync_score >= 1/2 %  the links with synchronized scores less than 0.5 were filtered out.
-%                         pyrun("G.add_edge(i, j, weight=w)", i = i, j = j, w = sync_score)
-%                     end
-%                 end %end of for loop j
-%             end % end of for loop i
-%             
-%             % Louvain method
-%             pyrun("partition = lvcm.best_partition(graph=G, partition=None, random_state = 1)")
-%             pyrun("max_k_w = []")
-%             pyrun( ...
-%                 ["for com in set(partition.values()):",
-%                 "    list_nodes = [nodes for nodes in partition.keys() if partition[nodes] == com]",
-%                 "    max_k_w = max_k_w + [list_nodes]"]) % list comprehension. concat [member list] of each community
-% 
-%      
-%            % Make Community Color list """
-%            pyrun("community_num_group = len(max_k_w)")
-%            pyrun("color_list_community = [[] for i in range(len(G.nodes()))]") % list comprehension. empty list of list
-%            pyrun( ...
-%                ["for i in range(len(G.nodes())):",
-%                "    for j in range(community_num_group):",
-%                "        if i in max_k_w[j]:",
-%                "            color_list_community[i] = j"])
-%            
-%            pyrun("print('a')")
-%           % Plot Community           
-%            pyrun("fig, ax = plt.subplots()")
-%            pyrun("print('a')")
-% 
-%            pyrun("edges = G.edges()")
-%            pyrun("weights = [G[u][v]['weight'] for u, v in edges]")
-%            pyrun("Feature_color_sub = color_list_community")
-%             
-%            pyrun("d = dict(G.degree)")
-%            pyrun("print(d)")
-%            pyrun("nx.draw_networkx_nodes(G=G," + ...
-%                "nodelist=d.keys()," + ...
-%                "node_size=[v * 100 for v in d.values()]," + ...
-%                "node_color=Feature_color_sub," + ...
-%                "cmap='jet'," + ...
-%                "vmin=0," + ...
-%                "vmax=community_num_group," + ...
-%                "ax = ax )")
-%            pyrun("nx.draw_networkx_edges(G = G," + ...
-%                "edge_color = weights," + ...
-%                "edge_cmap = plt.cm.Blues," + ...
-%                "ax = ax)")
-%            %pyrun("plt.xticks([])")
-%            %pyrun("plt.yticks([])")
-%            %pyrun("plt.colorbar(im)")
-%            %pyrun("plt.show(block=False)")
-%            pyrun("print(ax)")
-%            pyrun( ...
-%                "fig.savefig('networkfig.png')")
-
         end
 
 
-   
-        
-%         function applyBandPassFilter(apm, bandRange)
-%             for i = 1 : apm.pixelsNRow
-%                 for j = 1 : apm.pixelsNCol
-%                     apm.pixels{i,j}.applyBandpassFilter(bandRange);
-%                 end
-%             end
-%         end %applyBandPathFilter
-%         
-%         
-%         function detectSpikes(apm, thres, preTime, postTime) 
-%             for i = 1 : apm.pixelsNRow
-%                 for j = 1 : apm.pixelsNCol
-%                                 fprintf("\n In the (%d, %d)th slot,\n", i, j)
-% 
-%                     apm.pixels{i,j}.detectSpikes(thres, preTime, postTime);
-%                 end % j loop
-%             end % i loop
-%         end % function detectSpikes
-%         
-%         
-%         function preProcess(apm, cutoffVal, binWidth)
-%             % first do the preprocessing
-%             % cutoff and setting startTime and endTime
-%             for i = 1 : apm.pixelsNRow
-%                 for j = 1 : apm.pixelsNCol
-%                    
-%                     apm.pixels{i,j}.processing(cutoffVal);
-%                 end
-%             end
-%             
-%             % take max and min of startTimes and endTimes pixels,
-%             % to create a single timerange
-%             apm.setEndTimeMin();
-%             apm.setStartTimeMax();
-%             
-%             if apm.startTimeMax >= apm.endTimeMin
-%                 disp("error: startTimeMax > endTimeMin")
-%                 return
-%             end
-%             % apply the single timerange to each pixel, and calculate
-%             % fireing rate
-%             for i = 1 : apm.pixelsNRow
-%                 for j = 1 : apm.pixelsNCol
-%                      
-%                     apm.pixels{i,j}.startTimeMax = apm.startTimeMax;
-%                     apm.pixels{i,j}.endTimeMin = apm.endTimeMin;
-%                     apm.pixels{i,j}.getFireRate(binWidth);
-%                 end
-%             end
-%             
-%             sampleTH  = apm.pixels{1,1}.th;
-%             apm.timeLength = length(sampleTH);
-%             apm.matrices = cell(1, apm.timeLength);
-%                  
-%         end
-%         
-%         function setEndTimeMin(apm) 
-%             minNow = apm.pixels{1,1}.endTimeMin;
-%             for i = 1 : apm.pixelsNRow
-%                 for j = 1 : apm.pixelsNCol    
-%                     valNow = apm.pixels{i,j}.endTimeMin;
-%                     if valNow < minNow
-%                         minNow = valNow;
-%                     end
-%                 end
-%             end
-%             apm.endTimeMin = minNow;
-%         end
-%         
-%         function setStartTimeMax(apm) %step 4
-%             maxNow = apm.pixels{1,1}.startTimeMax;
-%             for i = 1 : apm.pixelsNRow
-%                 for j = 1 : apm.pixelsNCol    
-%                     valNow = apm.pixels{i,j}.startTimeMax;
-%                     if valNow > maxNow
-%                         maxNow = valNow;
-%                     end
-%                 end
-%             end
-%             apm.startTimeMax = maxNow;
-%         end
-%         
-%             
-%         function makeTimeVaryingHeatmap(apm, colormap)
-%             thMax = 0;
-%             for i = 1:apm.timeLength
-%                 matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);
-%                 for j = 1 : apm.pixelsNRow
-%                     for k = 1 : apm.pixelsNCol
-%                         thNow = apm.pixels{j,k}.th;
-%                         matrixNow(j,k) = thNow(i) ;
-%                         
-%                         if apm.pixels{j,k}.thMax > thMax
-%                             thMax = apm.pixels{j,k}.thMax;
-%                         end % loop: get thMax over all pixel
-%                     end % k loop: over columns
-%                 end % l loop: over rows
-%                 apm.matrices{i} = matrixNow;
-%             end
-%             
-%             figure;
-%             for i = 1:apm.timeLength
-%                  %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-%                 heatmap(apm.matrices{i}, 'ColorLimits',[0 thMax], 'Colormap', colormap);
-%                 drawnow;
-%             end
-%             
-%             
-%             
-%         end
-%         
-%         function recordTimeVaryingHeatmap(apm, colormap, filename, framerate )
-%             thMax = 0;
-%             for i = 1:apm.timeLength
-%                 matrixNow = zeros(apm.pixelsNRow, apm.pixelsNCol);
-%                 for j = 1 : apm.pixelsNRow
-%                     for k = 1 : apm.pixelsNCol
-%                         thNow = apm.pixels{j,k}.th;
-%                         matrixNow(j,k) = thNow(i) ;
-%                         
-%                         if apm.pixels{j,k}.thMax > thMax
-%                             thMax = apm.pixels{j,k}.thMax;
-%                         end % loop: get thMax over all pixel
-%                     end % k loop: over columns
-%                 end % l loop: over rows
-%                 apm.matrices{i} = matrixNow;
-%             end
-%             
-%             figure;
-%             for i = 1:apm.timeLength
-%                 %%% heatmap 옵션 수정 시 아래 라인을 수정하세요 %%%
-%                 heatmap(apm.matrices{i}, 'ColorLimits',[0 thMax], 'Colormap', colormap);
-%                 F(i) = getframe(gcf);
-%             end
-%             
-%             v = VideoWriter(filename, 'MPEG-4');
-%             v.FrameRate = framerate; %1초에 xframe. 총 100 frame이라면 100/x 초짜리가 될 것.
-%             v.Quality = 100;
-% 
-%             open(v);
-%             writeVideo(v, F);
-%             close(v);
-%             
-%             
-%             
+
         
     
             
