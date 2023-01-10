@@ -27,14 +27,31 @@ classdef networkAnalyzer < handle
         
         
         function addChannels(na, reader)
+            fprintf("Deleted previous data\n")
             na.channels = reader.readManyChannelsFromFile(1, 1);
             na.channelList = reader.channelList;
             na.positions = zeros([length(na.channelList),4]);
-            na.positions(:,1) = 1:length(na.channelList) %1st column: 
-            na.positions(:,2) = na.channelList %2nd column: channel number 
+            na.positions(:,1) = 1:length(na.channelList); %1st column: 
+            na.positions(:,2) = na.channelList; %2nd column: channel number 
         end
 
 
+        function deleteChannel(na, channelNum)
+            fprintf("Deleted channal %d\n", channelNum)
+
+            % delete from channelList
+            idx_channelList = find(na.channelList == channelNum)
+            na.channelList(idx_channelList) = [];
+            
+            % delete from channels
+            remove(na.channels, channelNum);
+
+            % delet from positions
+            idx_positions = find( na.positions(:,2) == channelNum);
+            na.positions(idx_positions,:) = [];
+            fprintf("%d channles left\n", length(na.channelList))
+
+        end
         
         function setChannelPosition2d(na, channelNum, xpos, ypos)
             idx = find( na.positions(:,2) == channelNum);
@@ -51,8 +68,11 @@ classdef networkAnalyzer < handle
 
         function bandPass(na, bandRange)
             for i = 1 : length(na.channelList)
+                % pick a channel object
                 channelNum = na.channelList(i);
                 channel = na.channels(channelNum);
+                
+                % do the job
                 channel.bandPass(bandRange);
             end
         end 
@@ -60,8 +80,11 @@ classdef networkAnalyzer < handle
         function detectSpikes(na, thres, preTime, postTime)
             % add한 모든 채널에서 spike detection 수행
             for i = 1 : length(na.channelList)
+                % pick a channel object
                 channelNum = na.channelList(i);
                 channel = na.channels(channelNum);
+
+                % do the job
                 channel.detectSpikes(thres, preTime, postTime);
             end
         end
@@ -79,10 +102,12 @@ classdef networkAnalyzer < handle
             dist = zeros(na.nChannels);
             for i = 1 : na.nChannels
                 for j = i+1 : na.nChannels
+                    % pick two channel objects
                     channel_1 = na.channels(na.channelList(i));
                     channel_2 = na.channels(na.channelList(j));
+
+                    % do the job
                     nTimestamps = channel_1.nTimestamps;
-                        
                     if channel_1.nSpikes  <= 1
                         dist(i,j) = NaN;
                         dist(j,i) = NaN;
@@ -136,7 +161,7 @@ classdef networkAnalyzer < handle
             na.nConnects = array2table(nansum((dist>na.thres),2), 'VariableNames', {'number of connected'}, 'RowNames',cellstr("node" + (1:na.nChannels)));              
         end
         
-        function louvain(na, basic_size, multiplier, colorscale_edge, colorscale_node, degree_lim, edge_lim, edge_colorbar_lim, community_colorbar_max, display_community_color, display_degree, display_sync_score)
+        function louvain(na, basic_size, multiplier, edge_startcolor, edge_endcolor, colorscale_node, degree_lim, edge_lim, edge_colorbar_lim, community_colorbar_max, display_community_color, display_degree, display_sync_score)
             pyrun("import numpy as np");
             pyrun("import pandas as pd");
            
@@ -146,7 +171,7 @@ classdef networkAnalyzer < handle
             pyrun("np.save(path, node_sizes)", path = filepath_node_sizes);
 
             %color
-            pyrun("colors = pd.Series([colorscale_edge, colorscale_node])", colorscale_edge = colorscale_edge, colorscale_node = colorscale_node);
+            pyrun("colors = pd.Series([edge_startcolor, edge_endcolor, colorscale_node])", edge_startcolor = edge_startcolor, edge_endcolor = edge_endcolor, colorscale_node = colorscale_node);
             filepath_colors = na.filepath + "/colors.pkl";
             pyrun("colors.to_pickle(path)", path = filepath_colors);
 
