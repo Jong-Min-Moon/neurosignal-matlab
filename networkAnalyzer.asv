@@ -193,9 +193,7 @@ classdef networkAnalyzer < handle
             % camera = 
             pyrun("camera = np.array([up_x, up_y, up_z, center_x, center_y, center_z, eye_x, eye_y, eye_z])", up_x = camera_up(1), up_y  = camera_up(2), up_z = camera_up(3), center_x = camera_center(1), center_y = camera_center(2), center_z = camera_center(3), eye_x = camera_eye(1), eye_y = camera_eye(2), eye_z = camera_eye(3));
             filepath_camera = na.filepath + "/camera.npy";
-            pyrun("np.save(path, camera)", path = filepath_camera); 
-
-
+            pyrun("np.save(path, camera", path = filepath_camera);           
             command = na.pythonpath + " " + na.filepath + "/drawnx.py";
             system(command)
         end

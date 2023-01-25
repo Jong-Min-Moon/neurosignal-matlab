@@ -11,19 +11,18 @@ import pandas as pd
 import os
 import plotly.graph_objects as go
 import interpol as itp
+import random
 
-################################################
-################################################
-# load data
 
-pwd = os.getcwd()
-#1.  create network.
+pwd = os.path.dirname(os.path.realpath(__file__))
+
 distMat = np.load(pwd + "/score_matrix.npy")
 
 positions = pd.read_pickle(pwd + "/positions.pkl")
+positions.columns = ["channelNum", "xPos", "yPos", "zPos"]
+positions['channelNum'] = positions['channelNum'].astype('int')
+positions.set_index("channelNum", inplace = True)
 
-n_nodes = distMat.shape[1] # number of nodes = number of channels
-G = nx.Graph()
 
 #node_sizes
 basic_size, multiplier = np.load(pwd + "/node_sizes.npy")
@@ -54,95 +53,97 @@ display_community_color  = display_or_not.iloc[0]
 display_degree = display_or_not.iloc[1]
 display_sync_score    = display_or_not.iloc[2]
 
-################################################
-################################################
+# camera
+camera_params = np.load(pwd + "/camera.npy")
+camera_up = camera_params[0:3]
+camera_center = camera_params[3:6]
+camera_eye = camera_params[6:9]
 
 
-
-
-
-
-################################################
-################################################
-# make a network
+G = nx.Graph()
 
 ## channel list
-channel_list = ["{}".format(int(i)) for i in positions[0]] #list of strings
+channel_list = ["{}".format(int(i)) for i in positions.index]
+# list of strings.
+# Since channels might have been deleted, one should avoid using range() and always refer to this list
 
 
-## NODE
-## We set the electrode as a node (e.g., circles in the network map)
-for i in range(len(channel_list)):
-    x_now = positions.iloc[i, 1]
-    y_now = positions.iloc[i, 2]
-    z_now = positions.iloc[i, 3]
-    position_now = (int(x_now), int(y_now), int(z_now))
-    G.add_node(channel_list[i], pos = position_now )
-    #pos[channel_list[i]] = position_now
+## We set each channel as a node (e.g., circles in the network map)
+for channelNum in channel_list:
+    G.add_node(channelNum, pos = positions.loc[int(channelNum)] )
 pos = nx.get_node_attributes(G,'pos')
 
 
-## EDGE
 ## we set the degree of synchronization between the electrodes as an edge
 ## (e.g., lines in the network map).
+n_nodes = len(channel_list) # number of nodes = number of channels
+
 for i in range(n_nodes):
     for j in range(i+1, n_nodes):
         sync_score = distMat[i,j]
-        # the links with synchronized scores less than 0.5 were filtered out.
+        # the links with synchronized scores less than thres were filtered out.
         if (sync_score >= thres):
             G.add_edge(channel_list[i], channel_list[j], weight = sync_score)
-################################################
-################################################
 
 
-
-################################################
-################################################
-# Louvain method
+            #run Louvain method. result: dictionary {channelNum:communityNum}
 partition = lvcm.best_partition(graph=G, partition=None, random_state = 1)
+
+
+degree_dict = dict(G.degree)
+partition_list = set(partition.values())
+    
 max_k_w = []
-for com in set(partition.values()):
-    list_nodes = [nodes for nodes in partition.keys() if partition[nodes] == com]
-    list_nodes = [channel_list.index(node) for node in list_nodes]
+for com in partition_list: # loop over each community
+    list_nodes = [int(channelNum) for channelNum in channel_list
+        if partition[channelNum] == com
+        and degree_dict[channelNum]>=lim_degree_low # NODE FILTERING
+        and degree_dict[channelNum]<=lim_degree_high # NODE FILTERING
+        ]
     max_k_w = max_k_w + [list_nodes]
      # list comprehension. concat [member list] of each community
 
-     
-# Make Community Color list
-# APPLY NODE FILTERING!
-d = dict(G.degree)
-degree_values = list(d.values())
-
-community_num_group = len(max_k_w)
-color_list_community = [
-    [] for i in range(len(G.nodes()))
-    if (degree_values[i]>=lim_degree_low) and (degree_values[i]<=lim_degree_high) #filtering
-] # list comprehension. empty list of list
-
-for i in range(len(color_list_community)):
-    for j in range(community_num_group):
-        if i in max_k_w[j]:
-            color_list_community[i] = j
+color_list_community = []
+color_code_now = 0
+for channelNum in channel_list: # loop over channels
+    for color_code, nodes_sharing_community in enumerate(max_k_w): #loop over communities
+        if int(channelNum) in nodes_sharing_community:
+            color_list_community.append(color_code)
 
 
-
-
-
-
-
-########################################################
-########################################################
-# 2022.12.08
+# save as csv (2022.12.08)
 Feature_color_sub = np.array(color_list_community)+1  # cluster num = 1, 2, 3, .... not 0 , 1, 2, ...
 
-cluster_membership_pd = pd.DataFrame({"node" : np.arange(1,len(Feature_color_sub)+1), "community" : Feature_color_sub})
-cluster_membership_pd.groupby("community").agg(list).to_csv("community_info.csv")  
-
-########################################################
-########################################################
+cluster_membership_pd = pd.DataFrame({"node" : channel_list, "community" : Feature_color_sub})
+cluster_membership_pd.groupby("community").agg(list).to_csv("community_info.csv") 
 
 
-#degree = node size
+layout = go.Layout(title="Community structure of the electrodes",
+                width=650,
+                height=625,
+                showlegend=False,
+                margin=dict(t=80),
+                hovermode='closest')
+
+fig = go.Figure(layout=layout)
+
+
+x_nodes = [ pos[ channelNum ][0] for channelNum in channel_list
+        if degree_dict[channelNum]>=lim_degree_low # NODE FILTERING
+        and degree_dict[channelNum]<=lim_degree_high 
+        ]# NODE FILTERING
+
+y_nodes = [ pos[ channelNum ][1] for channelNum in channel_list
+        if degree_dict[channelNum]>=lim_degree_low # NODE FILTERING
+        and degree_dict[channelNum]<=lim_degree_high 
+        ]# NODE FILTERING
+
+z_nodes = [ pos[ channelNum ][2] for channelNum in channel_list
+        if degree_dict[channelNum]>=lim_degree_low # NODE FILTERING
+        and degree_dict[channelNum]<=lim_degree_high 
+        ]# NODE FILTERING
+
+
 d = dict(G.degree)
 degree_values = d.values()
 node_size_normalized = np.fromiter(degree_values, dtype = float)
@@ -150,11 +151,43 @@ degree_values = list(d.values())
 node_size_normalized = (node_size_normalized - np.min(node_size_normalized))/(np.max(node_size_normalized) - np.min(node_size_normalized))
 
 
-#we need to seperate the X,Y,Z coordinates for Plotly
-x_nodes = [ pos[ str(i+1) ][0] for i in range(len(pos)) if (degree_values[i]>=lim_degree_low) and (degree_values[i]<=lim_degree_high)]# x-coordinates of nodes
-y_nodes = [ pos[ str(i+1) ][1] for i in range(len(pos)) if (degree_values[i]>=lim_degree_low) and (degree_values[i]<=lim_degree_high)]# y-coordinates
-z_nodes = [ pos[ str(i+1) ][2] for i in range(len(pos)) if (degree_values[i]>=lim_degree_low) and (degree_values[i]<=lim_degree_high)]# z-coordinates
+# community color
+if display_degree:
+    node_size= basic_size + multiplier * (1 + node_size_normalized)
+if not display_degree:
+    node_size= basic_size + multiplier * (0 * (1 + node_size_normalized) + 1)
 
+# node color
+if display_community_color:
+    node_dict = dict(
+                            symbol='circle',
+                                    size= node_size,
+                                    cmin= 1,
+                                    cmax = community_max,
+                                    color=Feature_color_sub, #color the nodes according to their community
+                                    colorscale=colorscale_node, #either green or mageneta
+                                    line=dict(color='black', width=0.5),
+                                    colorbar=dict(thickness=20, title= "community", xanchor = "right")
+                                    )
+if not display_community_color:
+    node_dict = dict(
+        symbol='circle',
+        size= node_size,
+        color = "yellow",
+        line=dict(color='black', width=0.5),
+                                    )
+#create a trace for the nodes
+fig.add_trace( go.Scatter3d(
+    name = "Community",
+    x=x_nodes,
+    y=y_nodes,
+    z=z_nodes,
+    mode='markers',
+    marker = node_dict,
+    text=[f"Channel {channelNum} has degree {degree_dict[channelNum]}, and belongs to community {partition[channelNum]+1}" for channelNum in partition],
+    hoverinfo='text',
+    showlegend = True
+    ))
 
 
 #we  need to create lists that contain the starting and ending coordinates of each edge.
@@ -189,60 +222,12 @@ for u,v in edge_list:
 #####################################
 #####################################
 
-# 22.12.08. on/off features
-# community color
-if display_degree:
-    node_size= basic_size + multiplier * (1 + node_size_normalized)
-if not display_degree:
-    node_size= basic_size + multiplier * (0 * (1 + node_size_normalized) + 1)
 
-# node color
-if display_community_color:
-    node_dict = dict(
-                            symbol='circle',
-                                    size= node_size,
-                                    cmin= 1,
-                                    cmax = community_max,
-                                    color=Feature_color_sub, #color the nodes according to their community
-                                    colorscale=colorscale_node, #either green or mageneta
-                                    line=dict(color='black', width=0.5),
-                                    colorbar=dict(thickness=20, title= "community", xanchor = "right")
-                                    )
-if not display_community_color:
-    node_dict = dict(
-        symbol='circle',
-        size= node_size,
-        color = "yellow",
-        line=dict(color='black', width=0.5),
-                                    )
 
 #also need to create the layout for our plot
-layout = go.Layout(title="Community structure of the electrodes",
-                width=650,
-                height=625,
-                showlegend=False,
-                #scene=dict(
-                #    xaxis=dict(axis),
-                #    yaxis=dict(axis),
-                #    zaxis=dict(axis),
-               #         ),
-                margin=dict(t=80),
-                hovermode='closest')
 
-fig = go.Figure(layout=layout)
 
-#create a trace for the nodes
-fig.add_trace( go.Scatter3d(
-    name = "Community",
-    x=x_nodes,
-    y=y_nodes,
-    z=z_nodes,
-    mode='markers',
-    marker = node_dict,
-    text=[f"Node {i+1} belongs to community {Feature_color_sub[i]}" for i in range(len(Feature_color_sub))],
-    hoverinfo='text',
-    showlegend = True
-    ))
+
 
 
 
@@ -332,14 +317,15 @@ for i in range(1,len(weights)):
         ) #go
         ) # list
 
-fig.write_html(pwd + "/networkfig.html")
 
-
-
-name = 'eye = (x:0., y:0., z:2.5)'
 camera = dict(
-    eye=dict(x=0., y=0., z=2.5)
+    up = dict(x = camera_up[0], y = camera_up[1], z = camera_up[2]),
+    center = dict(x = camera_center[0], y = camera_center[1], z = camera_center[2]),
+    eye = dict(x = camera_eye[0], y = camera_eye[1], z = camera_eye[2])
 )
 
-fig.update_layout(scene_camera=camera, title=name)
+fig.update_layout(scene_camera=camera)
+
+
+fig.write_html(pwd + "/networkfig.html")
 fig.write_image("networkfig.svg")
