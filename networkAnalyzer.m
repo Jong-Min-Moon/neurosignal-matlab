@@ -49,7 +49,7 @@ classdef networkAnalyzer < handle
             % delet from positions
             idx_positions = find( na.positions(:,2) == channelNum);
             na.positions(idx_positions,:) = [];
-            fprintf("%d channles left\n", length(na.channelList))
+            fprintf("%d channels left\n", length(na.channelList))
 
         end
         
@@ -64,6 +64,7 @@ classdef networkAnalyzer < handle
             na.positions(idx, 3) = xpos;
             na.positions(idx, 4) = ypos;
             na.positions(idx, 5) = zpos;
+            fprintf("set channel %d's position as (%f, %f, %f)\n", channelNum, na.positions(idx, 3), na.positions(idx, 4), na.positions(idx, 5))
         end
 
         function bandPass(na, bandRange)
@@ -85,6 +86,7 @@ classdef networkAnalyzer < handle
                 channel = na.channels(channelNum);
 
                 % do the job
+                fprintf("channel %d ", channelNum)
                 channel.detectSpikes(thres, preTime, postTime);
             end
         end
@@ -161,7 +163,9 @@ classdef networkAnalyzer < handle
             na.nConnects = array2table(nansum((dist>na.thres),2), 'VariableNames', {'number of connected'}, 'RowNames',cellstr("node" + (1:na.nChannels)));              
         end
         
-        function louvain(na, basic_size, multiplier, edge_startcolor, edge_endcolor, colorscale_node, degree_lim, edge_lim, edge_colorbar_lim, community_colorbar_max, display_community_color, display_degree, display_sync_score)
+
+
+        function louvain(na, basic_size, multiplier, edge_startcolor, edge_endcolor, node_startcolor, node_endcolor, degree_lim, edge_lim, edge_colorbar_lim, community_colorbar_max, display_community_color, display_degree, display_sync_score, display_axes, camera_up, camera_center, camera_eye)
             pyrun("import numpy as np");
             pyrun("import pandas as pd");
            
@@ -171,7 +175,7 @@ classdef networkAnalyzer < handle
             pyrun("np.save(path, node_sizes)", path = filepath_node_sizes);
 
             %color
-            pyrun("colors = pd.Series([edge_startcolor, edge_endcolor, colorscale_node])", edge_startcolor = edge_startcolor, edge_endcolor = edge_endcolor, colorscale_node = colorscale_node);
+            pyrun("colors = pd.Series([edge_startcolor, edge_endcolor, node_startcolor, node_endcolor])", edge_startcolor = edge_startcolor, edge_endcolor = edge_endcolor, node_startcolor = node_startcolor, node_endcolor = node_endcolor);
             filepath_colors = na.filepath + "/colors.pkl";
             pyrun("colors.to_pickle(path)", path = filepath_colors);
 
@@ -181,16 +185,20 @@ classdef networkAnalyzer < handle
             pyrun("lims.to_pickle(path)", path = filepath_lims);
 
             % display components or not
-            pyrun("display_or_not = pd.Series([display_community_color, display_degree, display_sync_score])", display_community_color = display_community_color, display_degree = display_degree, display_sync_score = display_sync_score);
+            pyrun("display_or_not = pd.Series([display_community_color, display_degree, display_sync_score, display_axes])", display_community_color = display_community_color, display_degree = display_degree, display_sync_score = display_sync_score, display_axes = display_axes);
             filepath_display_or_not = na.filepath + "/display_or_not.pkl";
             pyrun("display_or_not.to_pickle(path)", path = filepath_display_or_not);
+
+
+            % camera = 
+            pyrun("camera = np.array([up_x, up_y, up_z, center_x, center_y, center_z, eye_x, eye_y, eye_z])", up_x = camera_up(1), up_y  = camera_up(2), up_z = camera_up(3), center_x = camera_center(1), center_y = camera_center(2), center_z = camera_center(3), eye_x = camera_eye(1), eye_y = camera_eye(2), eye_z = camera_eye(3));
+            filepath_camera = na.filepath + "/camera.npy";
+            pyrun("np.save(path, camera)", path = filepath_camera); 
+
 
             command = na.pythonpath + " " + na.filepath + "/drawnx.py";
             system(command)
         end
-
-
-
         
     
             
