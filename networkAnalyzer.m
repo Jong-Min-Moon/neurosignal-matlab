@@ -165,7 +165,7 @@ classdef networkAnalyzer < handle
         
 
 
-        function louvain(na, basic_size, multiplier, edge_startcolor, edge_endcolor, colorscale_node, degree_lim, edge_lim, edge_colorbar_lim, community_colorbar_max, display_community_color, display_degree, display_sync_score, camera_up, camera_center, camera_eye)
+        function louvain(na, basic_size, multiplier, edge_startcolor, edge_endcolor, node_startcolor, node_endcolor, degree_lim, edge_lim, edge_colorbar_lim, community_colorbar_max, display_community_color, display_degree, display_sync_score, display_axes, camera_up, camera_center, camera_eye)
             pyrun("import numpy as np");
             pyrun("import pandas as pd");
            
@@ -175,7 +175,7 @@ classdef networkAnalyzer < handle
             pyrun("np.save(path, node_sizes)", path = filepath_node_sizes);
 
             %color
-            pyrun("colors = pd.Series([edge_startcolor, edge_endcolor, colorscale_node])", edge_startcolor = edge_startcolor, edge_endcolor = edge_endcolor, colorscale_node = colorscale_node);
+            pyrun("colors = pd.Series([edge_startcolor, edge_endcolor, node_startcolor, node_endcolor])", edge_startcolor = edge_startcolor, edge_endcolor = edge_endcolor, node_startcolor = node_startcolor, node_endcolor = node_endcolor);
             filepath_colors = na.filepath + "/colors.pkl";
             pyrun("colors.to_pickle(path)", path = filepath_colors);
 
@@ -185,7 +185,7 @@ classdef networkAnalyzer < handle
             pyrun("lims.to_pickle(path)", path = filepath_lims);
 
             % display components or not
-            pyrun("display_or_not = pd.Series([display_community_color, display_degree, display_sync_score])", display_community_color = display_community_color, display_degree = display_degree, display_sync_score = display_sync_score);
+            pyrun("display_or_not = pd.Series([display_community_color, display_degree, display_sync_score, display_axes])", display_community_color = display_community_color, display_degree = display_degree, display_sync_score = display_sync_score, display_axes = display_axes);
             filepath_display_or_not = na.filepath + "/display_or_not.pkl";
             pyrun("display_or_not.to_pickle(path)", path = filepath_display_or_not);
 
