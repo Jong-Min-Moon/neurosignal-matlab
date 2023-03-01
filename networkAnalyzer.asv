@@ -137,7 +137,7 @@ classdef networkAnalyzer < handle
                         pyrun("dist_now = pyspike.spike_sync(train_1,train_2)");
                         pyrun("rng_generator = np.random.default_rng()")
 
-                        pyrun("normalized_score_save = np.zeros(1000)")
+                        pyrun("rng_generator = np.random.default_rng()")
 
                         for k = 1 : 1000
                             % generate random spikes
@@ -148,11 +148,10 @@ classdef networkAnalyzer < handle
                             pyrun("random_train_2 = pyspike.SpikeTrain(random_train_2, [0, a])", a = nTimestamps);
                         
                             pyrun("normalizer_now = pyspike.spike_sync(random_train_1,random_train_2)");
-                            pyrun("normalized_score_save[k] = dist_now/normalizer_now", k=k);
+                            
                         end
-                        
-                        pyrun("dist_norm = normalized_score_save.mean()");
-                        
+
+
                         
                         pyrun("score_matrix[int(i)-1, int(j)-1] = dist_unnorm", i=i, j=j );
 
