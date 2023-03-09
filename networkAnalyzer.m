@@ -12,12 +12,14 @@ classdef networkAnalyzer < handle
        syncScores
        nConnects
        thres
+       is_spike_detected
     end
     
     methods
         function na = networkAnalyzer(filepath, pythonpath)
             na.filepath = filepath;
             na.pythonpath = pythonpath;
+            na.is_spike_detected = false;
 
             terminate(pyenv);
             pyenv('Version', pythonpath);
@@ -89,9 +91,16 @@ classdef networkAnalyzer < handle
                 fprintf("channel %d ", channelNum)
                 channel.detectSpikes(thres, preTime, postTime);
             end
+            na.is_spike_detected = true;
         end
         
         function dist = spikeDist(na, thres)
+            if na.is_spike_detected == false
+                fprintf("run detectSpikes first")
+                return
+            end
+
+               
             na.thres = thres
             pyrun("import numpy as np");
             pyrun("import pandas as pd");
@@ -124,8 +133,9 @@ classdef networkAnalyzer < handle
                         train_1 = channel_1.spikeTimestamps;
                         train_2 = channel_2.spikeTimestamps;
 
-                        nSpikes_1 = channel_1.nSpikes;
-                        nSpikes_2 = channel_2.nSpikes;
+                        nSpikes_1 = channel_1.nSpikes
+                        nSpikes_2 = channel_2.nSpikes
+                        
                         
                           
                         % turn spikes into SpikeTrain objects in Python
@@ -135,23 +145,31 @@ classdef networkAnalyzer < handle
                         pyrun("train_2 = pyspike.SpikeTrain(train_2, [0, a])", a = nTimestamps);
                         
                         pyrun("dist_now = pyspike.spike_sync(train_1,train_2)");
+                        dist_now = pyrun("n = dist_now", "n")
                         pyrun("rng_generator = np.random.default_rng()")
 
-                        pyrun("normalized_score_save = np.zeros(1000)")
-
-                        for k = 1 : 1000
+                        pyrun("normalized_score_save = np.empty(1000)")
+                        pyrun("normalized_score_save[:] = np.nan")
+                        
+                        for k = 0 : (1000-1)
+                            fprintf("loop %i", k)
                             % generate random spikes
-                            pyrun("random_train_1 = np.sort(rng_generator.choice(nTimestamps, size = nSpikes_1, replace=False)) ",nTimestamps = nTimestamps, nSpikes_1 = nSpikes_1);
+                            pyrun("random_train_1 = np.sort(rng_generator.choice(int(nTimestamps), size = int(nSpikes_1), replace=False)) ",nTimestamps = nTimestamps, nSpikes_1 = nSpikes_1);
+                            %random_train_1 = pyrun("d = random_train_1", "d")
+  
                             pyrun("random_train_1 = pyspike.SpikeTrain(random_train_1, [0, a])", a = nTimestamps);
-
-                            pyrun("random_train_2 = np.sort(rng_generator.choice(nTimestamps, size = nSpikes_2, replace=False)) ",nTimestamps = nTimestamps, nSpikes_2 = nSpikes_2);
+                            
+                            pyrun("random_train_2 = np.sort(rng_generator.choice(int(nTimestamps), size = int(nSpikes_2), replace=False)) ",nTimestamps = nTimestamps, nSpikes_2 = nSpikes_2);
                             pyrun("random_train_2 = pyspike.SpikeTrain(random_train_2, [0, a])", a = nTimestamps);
                         
                             pyrun("normalizer_now = pyspike.spike_sync(random_train_1,random_train_2)");
-                            pyrun("normalized_score_save[k] = dist_now/normalizer_now", k=k);
+                            normalizer_now = pyrun("n = normalizer_now", "n")
+                            normalizer_save_now = pyrun("n = normalized_score_save", "n")
+
+                            pyrun("normalized_score_save[int(k)] = dist_now-normalizer_now", k=k);
                         end
                         
-                        pyrun("dist_norm = normalized_score_save.mean()");
+                        pyrun("dist_norm = max(0, normalized_score_save.mean())");
                         
                         
                         pyrun("score_matrix[int(i)-1, int(j)-1] = dist_unnorm", i=i, j=j );
