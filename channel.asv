@@ -427,7 +427,7 @@ classdef channel < handle
         end % end of getKmeansClusters
         
         % 2022.03.09
-        function [isolation_distance, l_ratio] = mahalanobis_metrics(ch, this_unit_id)
+        function mahalanobis_metrics(ch, this_unit_id)
         
         % Calculates isolation distance and L-ratio (metrics computed from Mahalanobis distance)
         % Based on metrics described in Schmitzer-Torbert et al. (2005) Neurosci 131: 1-11
@@ -447,15 +447,14 @@ classdef channel < handle
 
      
             if min(n_this_unit, n_others) >= 2
-                fprintf("Number of spikes: %i (cluster %i), %i (the others)\n", n_this_unit, this_unit_id, n_others)
                 dof = size(pcs_for_this_unit, 2); % number of features              
-                l_ratio = sum( chi2cdf( power(mahalanobis_other,2),dof,'upper')) / n_this_unit;
+                l_ratio = sum(chi2cdf(power(mahalanobis_other,2),dof,'upper')) / n_this_unit;
                 % normalize by size of cluster, not number of other spikes
                 
                 if n_this_unit <= n_others
                     isolation_distance = power(mahalanobis_other(n_this_unit),2);
                 else
-                    fprintf("thus isolation distance not defined.\n")
+                    fprintf("Number of spikes: %i (cluster %i) > %i (the others), \nthus isolation distance not defined.\n", n_this_unit, this_unit_id, n_others)
                     isolation_distance = nan;
                 end
             else
@@ -463,8 +462,9 @@ classdef channel < handle
                 l_ratio = nan;
                 isolation_distance = nan;
             end
-            fprintf("isolation distance of the cluster %i: %f \n", this_unit_id, isolation_distance)
-            fprintf("L_ratio of the cluster %i: %f \n", this_unit_id, l_ratio)
+            fprintf("isolation distanceof the cluster %i", this_unit_id)
+            
+            [isolation_distance l_ratio]
 
             end % end of function
 
