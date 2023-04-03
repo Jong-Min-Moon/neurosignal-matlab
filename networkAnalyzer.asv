@@ -193,30 +193,32 @@ classdef networkAnalyzer < handle
                             pyrun("normalizer_now = pyspike.spike_sync(random_train_1,random_train_2)");                 
                             pyrun("normalized_score_save[int( py_list_idx )] = dist_now - normalizer_now", ...
                                 py_list_idx = k - 1);
-                        end % end of 1000 random draws (k loop)
+                        end % end of 1000 random draws
                         
                         % normalize
                         pyrun("dist_norm = max(0, normalized_score_save.mean())");
                         
                         
                         %% save
-                            % save in ij-th entry
                         pyrun("score_matrix[int(i)-1, int(j)-1] = dist_norm", i=i, j=j );
-                        dist(i,j) = pyrun("d = score_matrix[int(i)-1, int(j)-1]", "d", i=i, j=j );
-                            
+
                         % symmetric matrix
-                        pyrun("score_matrix[int(j)-1, int(i)-1] = score_matrix[int(i)-1, int(j)-1]", i=i, j=j );       
+                        pyrun("score_matrix[int(j)-1, int(i)-1] = score_matrix[int(i)-1, int(j)-1]", i=i, j=j );
+
+    
+                        dist(i,j) = pyrun("d = score_matrix[int(i)-1, int(j)-1]", "d", i=i, j=j );
                         dist(j,i) = dist(i,j);
-                    end %
-                end % end of i-th loop
-            end % end of j-th loop            
+                    end
+                    
             
-            %% save information as files
-                % score matrix
+                end
+            end
+            
             filepath_score_matrix = na.filepath + "/score_matrix.npy"
             pyrun("np.save(path, score_matrix)", path = filepath_score_matrix);
             
-                % positions of channels
+            
+            % 
             filepath_positions = na.filepath + "/positions.pkl"
             pyrun("positions = np.array(positions_matlab)", positions_matlab = na.positions);
             pyrun("positions_index = positions[:,0].astype(np.int64)");
@@ -224,21 +226,12 @@ classdef networkAnalyzer < handle
             pyrun("positions.index = positions_index");
             pyrun("positions.to_pickle(path)", path = filepath_positions);
             
-                % sync score heatmap
             heatmap(dist, 'Colormap', cool);
             na.distMat = dist;
-
-                % sync score table
             na.syncScores = array2table( ...
-                dist, ...
-                'VariableNames', cellstr("node" + (1:na.nChannels)), ...
-                'RowNames', cellstr("node" + (1:na.nChannels)));
+                dist, 'VariableNames',cellstr("node" + (1:na.nChannels)), 'RowNames', cellstr("node" + (1:na.nChannels)))
   
-                % degree table
-            na.nConnects = array2table( ...
-                nansum((dist>na.thres),2), ...
-                'VariableNames', {'number of connected'}, ...
-                'RowNames',cellstr("node" + (1:na.nChannels)));              
+            na.nConnects = array2table(nansum((dist>na.thres),2), 'VariableNames', {'number of connected'}, 'RowNames',cellstr("node" + (1:na.nChannels)));              
         end
         
 
