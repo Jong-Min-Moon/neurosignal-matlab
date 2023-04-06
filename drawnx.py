@@ -36,16 +36,19 @@ node_endcolor   = colors.iloc[3]
 
 
 
-# colors
+# limits
 lims = pd.read_pickle(pwd + "/lims.pkl")
 lim_degree_low  = lims.iloc[0]
 lim_degree_high = lims.iloc[1]
 lim_edge_low    = lims.iloc[2]
 lim_edge_high   = lims.iloc[3]
-thres = lims.iloc[4]
-community_max = lims.iloc[5]
-lim_color_edge_low    = lims.iloc[6]
-lim_color_edge_high   = lims.iloc[7]
+community_max = lims.iloc[4]
+lim_color_edge_low    = lims.iloc[5]
+lim_color_edge_high   = lims.iloc[6]
+
+# threshold
+thres_data = pd.read_pickle(pwd + "/thres.pkl")
+thres = thres_data.iloc[0]
 
 
 # display_or_not

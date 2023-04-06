@@ -6,6 +6,7 @@ classdef networkAnalyzer < handle
        nChannels
        distMat
        filepath
+       pyfilepath
        pythonpath
        ChannelList
        positions
@@ -13,11 +14,14 @@ classdef networkAnalyzer < handle
        nConnects
        thres
        is_spike_detected
+       louvain_n_groups
+       louvain_count_groups
     end
     
     methods
         function na = networkAnalyzer(filepath, pythonpath)
-            na.filepath = filepath;
+            na.pyfilepath = filepath;
+            na.filepath = na.pyfilepath + "/pkls";
             na.pythonpath = pythonpath;
             na.is_spike_detected = false;
 
@@ -114,7 +118,7 @@ classdef networkAnalyzer < handle
             pyrun("dist_now = pyspike.spike_sync(train_1,train_2)");
         end
 
-        function dist = spikeDist(na, thres, is_normalize)
+        function dist = spikeDist(na, thres, is_normalize, n_simul)
             dist = zeros(na.nChannels);
 
             if na.is_spike_detected == false
@@ -132,8 +136,8 @@ classdef networkAnalyzer < handle
             % calculate and save entries of score matrix in python.
             % We just fetch each entry into matlab.
             for i = 1 : na.nChannels
+                fprintf("calculating sync score between %ith and other channels...\n", i)
                 for j = i+1 : na.nChannels
-                    fprintf("calculating sync score between %ith and %ith channel...%n", i,j)
                     % pick two channel objects
                     channel_1 = na.channels(na.channelList(i));
                     channel_2 = na.channels(na.channelList(j));
@@ -167,7 +171,7 @@ classdef networkAnalyzer < handle
                             pyrun("normalized_score_save = np.empty(1000)")
                             pyrun("normalized_score_save[:] = np.nan")
                             
-                            for k = 1:1000
+                            for k = 1:n_simul
                                 
                                 
                                 % generate two random spike trains and obtain a random sync score
@@ -246,6 +250,38 @@ classdef networkAnalyzer < handle
         
 
 
+        function louvain_prelim(na)
+            pyrun("import numpy as np");
+            pyrun("import pandas as pd");
+           
+           
+            % threshold
+            pyrun("thres_value = pd.Series([thres])", thres=na.thres);
+            filepath_thres = na.filepath + "/thres.pkl";
+            pyrun("thres_value.to_pickle(path)", path = filepath_thres);
+    
+            command = na.pythonpath + " " + na.pyfilepath + "/drawnx_prelim.py";
+            system(command)
+        end
+
+        function get_n_groups(na)
+            prelim_n_partition_path = na.filepath + "/prelim_n_partition.npy";
+            na.louvain_n_groups = int64(py.numpy.load(prelim_n_partition_path));
+
+            prelim_count_partition_path = na.filepath + "/prelim_count_partition.npy";
+            na.louvain_count_groups = int64(py.numpy.load(prelim_count_partition_path));
+        end
+
+        function get_group_info(na)
+            na.louvain_prelim();
+            pause(7);
+            na.get_n_groups;
+            fprintf("number of groups: %i\n", na.louvain_n_groups);
+            fprintf("number of channels per group:\n");
+            fprintf("   group / number of channels")
+            na.louvain_count_groups
+        end
+
         function louvain(na, basic_size, multiplier, edge_startcolor, edge_endcolor, node_startcolor, node_endcolor, degree_lim, edge_lim, edge_colorbar_lim, community_colorbar_max, display_community_color, display_degree, display_sync_score, display_axes, camera_up, camera_center, camera_eye)
             pyrun("import numpy as np");
             pyrun("import pandas as pd");
@@ -260,10 +296,33 @@ classdef networkAnalyzer < handle
             filepath_colors = na.filepath + "/colors.pkl";
             pyrun("colors.to_pickle(path)", path = filepath_colors);
 
-            % lim and threshold
-            pyrun("lims = pd.Series([degree_lim_low, degree_lim_high, edge_lim_low, edge_lim_high, thres, community_max, edge_color_lim_low, edge_color_lim_high])", degree_lim_low = degree_lim(1), degree_lim_high = degree_lim(2), edge_lim_low = edge_lim(1), edge_lim_high = edge_lim(2), thres=na.thres, community_max = community_colorbar_max, edge_color_lim_low = edge_colorbar_lim(1), edge_color_lim_high = edge_colorbar_lim(2));
+            % lim
+            pyrun("lims = pd.Series(" + ...
+                "[" + ...
+                "degree_lim_low," + ...
+                "degree_lim_high," + ...
+                "edge_lim_low," + ...
+                "edge_lim_high," + ...
+                "community_max," + ...
+                "edge_color_lim_low," + ...
+                "edge_color_lim_high" + ...
+                "]" + ...
+                ")", ...
+                degree_lim_low = degree_lim(1), ...
+                degree_lim_high = degree_lim(2), ...
+                edge_lim_low = edge_lim(1), ...
+                edge_lim_high = edge_lim(2), ...
+                community_max = community_colorbar_max, ...
+                edge_color_lim_low = edge_colorbar_lim(1), ...
+                edge_color_lim_high = edge_colorbar_lim(2) ...
+                );
             filepath_lims = na.filepath + "/lims.pkl";
             pyrun("lims.to_pickle(path)", path = filepath_lims);
+
+            % threshold
+            pyrun("thres_value = pd.Series([thres])", thres=na.thres);
+            filepath_thres = na.filepath + "/thres.pkl";
+            pyrun("thres_value.to_pickle(path)", path = filepath_thres);
 
             % display components or not
             pyrun("display_or_not = pd.Series([display_community_color, display_degree, display_sync_score, display_axes])", display_community_color = display_community_color, display_degree = display_degree, display_sync_score = display_sync_score, display_axes = display_axes);
@@ -277,7 +336,7 @@ classdef networkAnalyzer < handle
             pyrun("np.save(path, camera)", path = filepath_camera); 
 
 
-            command = na.pythonpath + " " + na.filepath + "/drawnx.py";
+            command = na.pythonpath + " " + na.pyfilepath + "/drawnx.py";
             system(command)
         end
         

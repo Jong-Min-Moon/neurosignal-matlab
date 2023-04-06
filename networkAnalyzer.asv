@@ -46,7 +46,7 @@ classdef networkAnalyzer < handle
             fprintf("Deleted channal %d\n", channelNum)
 
             % delete from channelList
-            idx_channelList = find(na.channelList == channelNum)
+            idx_channelList = find(na.channelList == channelNum);
             na.channelList(idx_channelList) = [];
             
             % delete from channels
@@ -114,7 +114,7 @@ classdef networkAnalyzer < handle
             pyrun("dist_now = pyspike.spike_sync(train_1,train_2)");
         end
 
-        function dist = spikeDist(na, thres)
+        function dist = spikeDist(na, thres, is_normalize)
             dist = zeros(na.nChannels);
 
             if na.is_spike_detected == false
@@ -123,7 +123,7 @@ classdef networkAnalyzer < handle
             end
 
                
-            na.thres = thres
+            na.thres = thres;
             
             %initialize score matrix
             na.nChannels = length(na.channelList);
@@ -133,6 +133,7 @@ classdef networkAnalyzer < handle
             % We just fetch each entry into matlab.
             for i = 1 : na.nChannels
                 for j = i+1 : na.nChannels
+                    fprintf("calculating sync score between %ith and %ith channel...\n", i,j)
                     % pick two channel objects
                     channel_1 = na.channels(na.channelList(i));
                     channel_2 = na.channels(na.channelList(j));
@@ -149,8 +150,8 @@ classdef networkAnalyzer < handle
                         pyrun("score_matrix[int(i)-1, int(j)-1] = np.NaN", i=i, j=j );
                     else
                         % main calculation
-                        nSpikes_1 = channel_1.nSpikes
-                        nSpikes_2 = channel_2.nSpikes
+                        nSpikes_1 = channel_1.nSpikes;
+                        nSpikes_2 = channel_2.nSpikes;
                         
                         %this produces a python variable "dist_now"
                         na.py_spikeIntoDist( ...
@@ -159,66 +160,66 @@ classdef networkAnalyzer < handle
                             nTimestamps)
                          
                         %% normalizing
-                        pyrun("rng_generator = np.random.default_rng()")
-                        pyrun("normalized_score_save = np.empty(1000)")
-                        pyrun("normalized_score_save[:] = np.nan")
-                        
-                        for k = 1:1000
-                            fprintf("loop %i", k)
+                        if ~ is_normalize
+                            pyrun("entry_value = dist_now")
+                        else
+                            pyrun("rng_generator = np.random.default_rng()")
+                            pyrun("normalized_score_save = np.empty(1000)")
+                            pyrun("normalized_score_save[:] = np.nan")
                             
-                            % generate two random spike trains and obtain a random sync score
-                                % random spike train 1
-                            pyrun("random_train_1 = np.sort(" + ...
-                                "rng_generator.choice(int(nTimestamps), " + ...
-                                "size = int(nSpikes_1)," + ...
-                                "replace=False" + ...
-                                ")" + ...
-                                ")" , ...
-                                nTimestamps = nTimestamps, ...
-                                nSpikes_1 = nSpikes_1);  
-                            pyrun("random_train_1 = pyspike.SpikeTrain(random_train_1, [0, a])", ...
-                                a = nTimestamps);
-
-                                % random spike train 2
-                            pyrun("random_train_2 = np.sort(" + ...
-                                "rng_generator.choice(int(nTimestamps)," + ...
-                                "size = int(nSpikes_2)," + ...
-                                "replace=False" + ...
-                                ")" + ...
-                                ") ",nTimestamps = nTimestamps, nSpikes_2 = nSpikes_2);
-                            pyrun("random_train_2 = pyspike.SpikeTrain(random_train_2, [0, a])", ...
-                                a = nTimestamps);
-                        
-                                % calculate the sync score
-                            pyrun("normalizer_now = pyspike.spike_sync(random_train_1,random_train_2)");                 
-                            pyrun("normalized_score_save[int( py_list_idx )] = dist_now - normalizer_now", ...
-                                py_list_idx = k - 1);
-                        end % end of 1000 random draws
-                        
-                        % normalize
-                        pyrun("dist_norm = max(0, normalized_score_save.mean())");
-                        
-                        
-                        %% save
-                        pyrun("score_matrix[int(i)-1, int(j)-1] = dist_norm", i=i, j=j );
-
-                        % symmetric matrix
-                        pyrun("score_matrix[int(j)-1, int(i)-1] = score_matrix[int(i)-1, int(j)-1]", i=i, j=j );
-
+                            for k = 1:1000
+                                
+                                
+                                % generate two random spike trains and obtain a random sync score
+                                    % random spike train 1
+                                pyrun("random_train_1 = np.sort(" + ...
+                                    "rng_generator.choice(int(nTimestamps), " + ...
+                                    "size = int(nSpikes_1)," + ...
+                                    "replace=False" + ...
+                                    ")" + ...
+                                    ")" , ...
+                                    nTimestamps = nTimestamps, ...
+                                    nSpikes_1 = nSpikes_1);  
+                                pyrun("random_train_1 = pyspike.SpikeTrain(random_train_1, [0, a])", ...
+                                    a = nTimestamps);
     
+                                    % random spike train 2
+                                pyrun("random_train_2 = np.sort(" + ...
+                                    "rng_generator.choice(int(nTimestamps)," + ...
+                                    "size = int(nSpikes_2)," + ...
+                                    "replace=False" + ...
+                                    ")" + ...
+                                    ") ",nTimestamps = nTimestamps, nSpikes_2 = nSpikes_2);
+                                pyrun("random_train_2 = pyspike.SpikeTrain(random_train_2, [0, a])", ...
+                                    a = nTimestamps);
+                            
+                                    % calculate the sync score
+                                pyrun("normalizer_now = pyspike.spike_sync(random_train_1,random_train_2)");                 
+                                pyrun("normalized_score_save[int( py_list_idx )] = dist_now - normalizer_now", ...
+                                    py_list_idx = k - 1);
+                            end % end of 1000 random draws (k loop)
+                            
+                            % normalize
+                            pyrun("entry_value = max(0, normalized_score_save.mean())");
+                        end % if is_normalize
+                        %% save 
+                            % savein ij-th entry
+                        pyrun("score_matrix[int(i)-1, int(j)-1] = entry_value", i=i, j=j ); % save into python numpy array
                         dist(i,j) = pyrun("d = score_matrix[int(i)-1, int(j)-1]", "d", i=i, j=j );
+                            
+                        % symmetric matrix
+                        pyrun("score_matrix[int(j)-1, int(i)-1] = score_matrix[int(i)-1, int(j)-1]", i=i, j=j );       
                         dist(j,i) = dist(i,j);
-                    end
-                    
+                    end %
+                end % end of i-th loop
+            end % end of j-th loop            
             
-                end
-            end
-            
+            %% save information as files
+                % score matrix
             filepath_score_matrix = na.filepath + "/score_matrix.npy"
             pyrun("np.save(path, score_matrix)", path = filepath_score_matrix);
             
-            
-            % 
+                % positions of channels
             filepath_positions = na.filepath + "/positions.pkl"
             pyrun("positions = np.array(positions_matlab)", positions_matlab = na.positions);
             pyrun("positions_index = positions[:,0].astype(np.int64)");
@@ -226,16 +227,44 @@ classdef networkAnalyzer < handle
             pyrun("positions.index = positions_index");
             pyrun("positions.to_pickle(path)", path = filepath_positions);
             
+                % sync score heatmap
             heatmap(dist, 'Colormap', cool);
             na.distMat = dist;
+
+                % sync score table
             na.syncScores = array2table( ...
-                dist, 'VariableNames',cellstr("node" + (1:na.nChannels)), 'RowNames', cellstr("node" + (1:na.nChannels)))
+                dist, ...
+                'VariableNames', cellstr("node" + (1:na.nChannels)), ...
+                'RowNames', cellstr("node" + (1:na.nChannels)));
   
-            na.nConnects = array2table(nansum((dist>na.thres),2), 'VariableNames', {'number of connected'}, 'RowNames',cellstr("node" + (1:na.nChannels)));              
+                % degree table
+            na.nConnects = array2table( ...
+                nansum((dist>na.thres),2), ...
+                'VariableNames', {'number of connected'}, ...
+                'RowNames',cellstr("node" + (1:na.nChannels)));              
         end
         
 
+        function louvain_prelim(na)
+            pyrun("import numpy as np");
+            pyrun("import pandas as pd");
+           
+           
+            % threshold
+            pyrun("thres_value = pd.Series([thres])", thres=na.thres);
+            filepath_thres = na.filepath + "/thres.pkl";
+            pyrun("thres_value.to_pickle(path)", path = filepath_thres);
 
+     
+            command = na.pythonpath + " " + na.filepath + "/drawnx.py";
+            system(command)
+        end
+
+        function get_n_groups(na)
+            pyrun("louvain_n_groups = np.load()")
+            louvain_n_groups = np.load(na.filepath + "/camera.npy")
+
+        end
         function louvain(na, basic_size, multiplier, edge_startcolor, edge_endcolor, node_startcolor, node_endcolor, degree_lim, edge_lim, edge_colorbar_lim, community_colorbar_max, display_community_color, display_degree, display_sync_score, display_axes, camera_up, camera_center, camera_eye)
             pyrun("import numpy as np");
             pyrun("import pandas as pd");
@@ -250,10 +279,33 @@ classdef networkAnalyzer < handle
             filepath_colors = na.filepath + "/colors.pkl";
             pyrun("colors.to_pickle(path)", path = filepath_colors);
 
-            % lim and threshold
-            pyrun("lims = pd.Series([degree_lim_low, degree_lim_high, edge_lim_low, edge_lim_high, thres, community_max, edge_color_lim_low, edge_color_lim_high])", degree_lim_low = degree_lim(1), degree_lim_high = degree_lim(2), edge_lim_low = edge_lim(1), edge_lim_high = edge_lim(2), thres=na.thres, community_max = community_colorbar_max, edge_color_lim_low = edge_colorbar_lim(1), edge_color_lim_high = edge_colorbar_lim(2));
+            % lim
+            pyrun("lims = pd.Series(" + ...
+                "[" + ...
+                "degree_lim_low," + ...
+                "degree_lim_high," + ...
+                "edge_lim_low," + ...
+                "edge_lim_high," + ...
+                "community_max," + ...
+                "edge_color_lim_low," + ...
+                "edge_color_lim_high" + ...
+                "]" + ...
+                ")", ...
+                degree_lim_low = degree_lim(1), ...
+                degree_lim_high = degree_lim(2), ...
+                edge_lim_low = edge_lim(1), ...
+                edge_lim_high = edge_lim(2), ...
+                community_max = community_colorbar_max, ...
+                edge_color_lim_low = edge_colorbar_lim(1), ...
+                edge_color_lim_high = edge_colorbar_lim(2) ...
+                );
             filepath_lims = na.filepath + "/lims.pkl";
             pyrun("lims.to_pickle(path)", path = filepath_lims);
+
+            % threshold
+            pyrun("thres_value = pd.Series([thres])", thres=na.thres);
+            filepath_thres = na.filepath + "/thres.pkl";
+            pyrun("thres_value.to_pickle(path)", path = filepath_thres);
 
             % display components or not
             pyrun("display_or_not = pd.Series([display_community_color, display_degree, display_sync_score, display_axes])", display_community_color = display_community_color, display_degree = display_degree, display_sync_score = display_sync_score, display_axes = display_axes);
