@@ -46,7 +46,7 @@ classdef networkAnalyzer < handle
             fprintf("Deleted channal %d\n", channelNum)
 
             % delete from channelList
-            idx_channelList = find(na.channelList == channelNum)
+            idx_channelList = find(na.channelList == channelNum);
             na.channelList(idx_channelList) = [];
             
             % delete from channels
@@ -114,7 +114,7 @@ classdef networkAnalyzer < handle
             pyrun("dist_now = pyspike.spike_sync(train_1,train_2)");
         end
 
-        function dist = spikeDist(na, thres)
+        function dist = spikeDist(na, thres, is_normalize)
             dist = zeros(na.nChannels);
 
             if na.is_spike_detected == false
@@ -123,7 +123,7 @@ classdef networkAnalyzer < handle
             end
 
                
-            na.thres = thres
+            na.thres = thres;
             
             %initialize score matrix
             na.nChannels = length(na.channelList);
@@ -133,6 +133,7 @@ classdef networkAnalyzer < handle
             % We just fetch each entry into matlab.
             for i = 1 : na.nChannels
                 for j = i+1 : na.nChannels
+                    fprintf("calculating sync score between %ith and %ith channel...%n", i,j)
                     % pick two channel objects
                     channel_1 = na.channels(na.channelList(i));
                     channel_2 = na.channels(na.channelList(j));
@@ -149,8 +150,8 @@ classdef networkAnalyzer < handle
                         pyrun("score_matrix[int(i)-1, int(j)-1] = np.NaN", i=i, j=j );
                     else
                         % main calculation
-                        nSpikes_1 = channel_1.nSpikes
-                        nSpikes_2 = channel_2.nSpikes
+                        nSpikes_1 = channel_1.nSpikes;
+                        nSpikes_2 = channel_2.nSpikes;
                         
                         %this produces a python variable "dist_now"
                         na.py_spikeIntoDist( ...
@@ -159,49 +160,51 @@ classdef networkAnalyzer < handle
                             nTimestamps)
                          
                         %% normalizing
-                        pyrun("rng_generator = np.random.default_rng()")
-                        pyrun("normalized_score_save = np.empty(1000)")
-                        pyrun("normalized_score_save[:] = np.nan")
-                        
-                        for k = 1:1000
-                            fprintf("loop %i", k)
+                        if ~ is_normalize
+                            pyrun("entry_value = dist_now")
+                        else
+                            pyrun("rng_generator = np.random.default_rng()")
+                            pyrun("normalized_score_save = np.empty(1000)")
+                            pyrun("normalized_score_save[:] = np.nan")
                             
-                            % generate two random spike trains and obtain a random sync score
-                                % random spike train 1
-                            pyrun("random_train_1 = np.sort(" + ...
-                                "rng_generator.choice(int(nTimestamps), " + ...
-                                "size = int(nSpikes_1)," + ...
-                                "replace=False" + ...
-                                ")" + ...
-                                ")" , ...
-                                nTimestamps = nTimestamps, ...
-                                nSpikes_1 = nSpikes_1);  
-                            pyrun("random_train_1 = pyspike.SpikeTrain(random_train_1, [0, a])", ...
-                                a = nTimestamps);
-
-                                % random spike train 2
-                            pyrun("random_train_2 = np.sort(" + ...
-                                "rng_generator.choice(int(nTimestamps)," + ...
-                                "size = int(nSpikes_2)," + ...
-                                "replace=False" + ...
-                                ")" + ...
-                                ") ",nTimestamps = nTimestamps, nSpikes_2 = nSpikes_2);
-                            pyrun("random_train_2 = pyspike.SpikeTrain(random_train_2, [0, a])", ...
-                                a = nTimestamps);
-                        
-                                % calculate the sync score
-                            pyrun("normalizer_now = pyspike.spike_sync(random_train_1,random_train_2)");                 
-                            pyrun("normalized_score_save[int( py_list_idx )] = dist_now - normalizer_now", ...
-                                py_list_idx = k - 1);
-                        end % end of 1000 random draws (k loop)
-                        
-                        % normalize
-                        pyrun("dist_norm = max(0, normalized_score_save.mean())");
-                        
-                        
-                        %% save
-                            % save in ij-th entry
-                        pyrun("score_matrix[int(i)-1, int(j)-1] = dist_norm", i=i, j=j );
+                            for k = 1:1000
+                                
+                                
+                                % generate two random spike trains and obtain a random sync score
+                                    % random spike train 1
+                                pyrun("random_train_1 = np.sort(" + ...
+                                    "rng_generator.choice(int(nTimestamps), " + ...
+                                    "size = int(nSpikes_1)," + ...
+                                    "replace=False" + ...
+                                    ")" + ...
+                                    ")" , ...
+                                    nTimestamps = nTimestamps, ...
+                                    nSpikes_1 = nSpikes_1);  
+                                pyrun("random_train_1 = pyspike.SpikeTrain(random_train_1, [0, a])", ...
+                                    a = nTimestamps);
+    
+                                    % random spike train 2
+                                pyrun("random_train_2 = np.sort(" + ...
+                                    "rng_generator.choice(int(nTimestamps)," + ...
+                                    "size = int(nSpikes_2)," + ...
+                                    "replace=False" + ...
+                                    ")" + ...
+                                    ") ",nTimestamps = nTimestamps, nSpikes_2 = nSpikes_2);
+                                pyrun("random_train_2 = pyspike.SpikeTrain(random_train_2, [0, a])", ...
+                                    a = nTimestamps);
+                            
+                                    % calculate the sync score
+                                pyrun("normalizer_now = pyspike.spike_sync(random_train_1,random_train_2)");                 
+                                pyrun("normalized_score_save[int( py_list_idx )] = dist_now - normalizer_now", ...
+                                    py_list_idx = k - 1);
+                            end % end of 1000 random draws (k loop)
+                            
+                            % normalize
+                            pyrun("entry_value = max(0, normalized_score_save.mean())");
+                        end % if is_normalize
+                        %% save 
+                            % savein ij-th entry
+                        pyrun("score_matrix[int(i)-1, int(j)-1] = entry_value", i=i, j=j ); % save into python numpy array
                         dist(i,j) = pyrun("d = score_matrix[int(i)-1, int(j)-1]", "d", i=i, j=j );
                             
                         % symmetric matrix
