@@ -14,7 +14,8 @@ import interpol as itp
 import random
 
 
-pwd = os.path.dirname(os.path.realpath(__file__))
+pwd_save = os.path.dirname(os.path.realpath(__file__))
+pwd = pwd_save + "/pkls"
 
 distMat = np.load(pwd + "/score_matrix.npy")
 
@@ -27,24 +28,25 @@ positions.set_index("channelNum", inplace = True)
 #node_sizes
 basic_size, multiplier = np.load(pwd + "/node_sizes.npy")
 
-# colors
+# edge colors
 colors = pd.read_pickle(pwd + "/colors.pkl")
 edge_startcolor = colors.iloc[0]
 edge_endcolor   = colors.iloc[1]
-node_startcolor = colors.iloc[2]
-node_endcolor   = colors.iloc[3]
 
-
-
+# node colors
+color_list_node = list(pd.read_pickle(pwd + "/colors_node.pkl"))
+color_list_node = "".join(color_list_node)
+color_list_node = color_list_node.split("#")
+color_list_node = ["#" + code for code in color_list_node]
 # limits
 lims = pd.read_pickle(pwd + "/lims.pkl")
 lim_degree_low  = lims.iloc[0]
 lim_degree_high = lims.iloc[1]
 lim_edge_low    = lims.iloc[2]
 lim_edge_high   = lims.iloc[3]
-community_max = lims.iloc[4]
-lim_color_edge_low    = lims.iloc[5]
-lim_color_edge_high   = lims.iloc[6]
+#community_max = lims.iloc[4]
+lim_color_edge_low    = lims.iloc[4]
+lim_color_edge_high   = lims.iloc[5]
 
 # threshold
 thres_data = pd.read_pickle(pwd + "/thres.pkl")
@@ -160,8 +162,10 @@ if not display_degree:
 
 # node color
 if display_community_color:
-    color_list_node = itp.interpolate(node_startcolor, node_endcolor, max(Feature_color_sub)+1)
-    color_list_node[0]= '#f0efef' #gray
+    #color_list_node = itp.interpolate(node_startcolor, node_endcolor, max(Feature_color_sub)+1) 
+    #color_list_node.[0]= '#f0efef' #gray
+    color_list_node[0] = "#f0efef"
+    print(color_list_node)
 
     for i, color_code in enumerate(color_list_community):
         channelNum = channel_list_filtered[i]
@@ -170,12 +174,8 @@ if display_community_color:
             node_dict = dict(
                                 symbol='circle',
                                         size= node_size[i],                           
-                                        cmin= 1,
-                                        cmax = max(Feature_color_sub),
                                         color=color_list_node[color_code], #color the nodes according to their community
-                                        colorscale = [node_startcolor, node_endcolor], #either green or mageneta
                                         line=dict(color='black', width=0.5),
-                                        colorbar=dict(thickness=20, title= "community", xanchor = "right")
                                         )
         else: #do not draw colorbar
             node_dict = dict(
@@ -253,11 +253,6 @@ for u,v in edge_list:
 
 
 #also need to create the layout for our plot
-
-
-
-
-
 
 
 axis = dict(showbackground=False,
@@ -362,5 +357,5 @@ if not display_axes:
             )
             )
 
-fig.write_html(pwd + "/networkfig.html")
-fig.write_image("networkfig.svg")
+fig.write_html(pwd_save+"/networkfig.html")
+fig.write_image(pwd_save+"networkfig.svg")
