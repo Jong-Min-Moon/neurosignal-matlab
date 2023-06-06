@@ -29,11 +29,11 @@ classdef channelReader < handle
             %   5. sampleRate: sampling frequency.시간이 기록되어 있는 파일의 경우 이 값은 사용되지
             %                 않음
            
-            % read data part of the file (i.e. skip the explanations written in English)
-            data = readmatrix(filename, range = [startRowIdx channelColumnIdx]); 
+            % read data part of the file (delete explanations written in English)
+            chReader.massiveData = readmatrix(filename, range = [startRowIdx channelColumnIdx]); 
 
             % extract channel information and  create a channel list
-            chReader.massiveDataChannelRows = data(:,1);         
+            chReader.massiveDataChannelRows = chReader.massiveData(:,1);         
             chReader.channelList = unique(chReader.massiveDataChannelRows);
 
             % print out the channel list to the user
@@ -43,14 +43,13 @@ classdef channelReader < handle
             % if starting time for each row is available, save it for later use
             % it will be used for calculating the sampleRate 
             if timeColumnIdx > 0 % 시간이 기록되어 있으면, 
-                chReader.fileBinTimeStart = data(:, timeColumnIdx- channelColumnIdx + 1);
+                chReader.fileBinTimeStart = chReader.massiveData(:, timeColumnIdx- channelColumnIdx + 1);
             end
             
-            % save the numeric recording part of the file
-            chReader.massiveData = data(:, (startColIdx - channelColumnIdx + 1):end );
+            chReader.massiveData = chReader.massiveData(:, (startColIdx - channelColumnIdx + 1):end );
             chReader.fileTimeColumnIdx = timeColumnIdx;
             chReader.fileSampleRate = sampleRate;
-        end
+                end
 
         function channelObject = readVerticalChannel(chReader, filename, timeColumnIdx, startRowIdx, startColIdx, sampleRate, organoidNum, channelNum, month)
            
