@@ -11,46 +11,10 @@ classdef channelReader < handle
     methods
         function chReader = channelReader()
         end
+    %part 1 : single channel file
+    %part 2 : multi-channel file
+    %part 3 : utils
 
-        function readMultiChannelFile(chReader, filename, channelColumnIdx, timeColumnIdx, startRowIdx, startColIdx, sampleRate)
-            % inputs:
-            % 1. filename: string.
-            %    - file path (e.g. "./data/1_singleunit wave.xlsx")
-            % 2. channelColumnIdx: integer.
-            %    - indicates which column stores the channel information.
-            %    - a multichannel file must have this information.                       
-            % 3. timeColumnIdx: integer.
-            %    - indicates which column stores the starting time of each row.
-            %    - input 0 if the file does not contain this information.
-            %     (than that file must contain sampleRate information)
-            % 4. startRowIdx: integer.
-            %    - indicates which row starts recording obervations               
-            %   4. startColIdx: 관측치 기록이 시작되는 column number
-            %   5. sampleRate: sampling frequency.시간이 기록되어 있는 파일의 경우 이 값은 사용되지
-            %                 않음
-           
-            % read data part of the file (i.e. skip the explanations written in English)
-            data = readmatrix(filename, range = [startRowIdx channelColumnIdx]); 
-
-            % extract channel information and  create a channel list
-            chReader.massiveDataChannelRows = data(:,1);         
-            chReader.channelList = unique(chReader.massiveDataChannelRows);
-
-            % print out the channel list to the user
-            fprintf("This file has %d channels: ", length( chReader.channelList ))
-            transpose(chReader.channelList) %just to print out the list in horizontal format
-
-            % if starting time for each row is available, save it for later use
-            % it will be used for calculating the sampleRate 
-            if timeColumnIdx > 0 % 시간이 기록되어 있으면, 
-                chReader.fileBinTimeStart = data(:, timeColumnIdx- channelColumnIdx + 1);
-            end
-            
-            % save the numeric recording part of the file
-            chReader.massiveData = data(:, (startColIdx - channelColumnIdx + 1):end );
-            chReader.fileTimeColumnIdx = timeColumnIdx;
-            chReader.fileSampleRate = sampleRate;
-        end
 
         function channelObject = readVerticalChannel(chReader, filename, timeColumnIdx, startRowIdx, startColIdx, sampleRate, organoidNum, channelNum, month)
            
@@ -121,9 +85,54 @@ classdef channelReader < handle
         
 
  
-        
-        
-        
+        function readMultiChannelFile(chReader, ...
+                filename, channelColumnIdx, timeColumnIdx, startRowIdx, startColIdx, sampleRate ...
+                )
+            % inputs:
+            % 1. filename: string.
+            %    - file path (e.g. "./data/1_singleunit wave.xlsx")
+            % 2. channelColumnIdx: int.
+            %    - indicates which column stores the channel information.
+            %    - a multichannel file must have this information.                       
+            % 3. timeColumnIdx: int.
+            %    - indicates which column stores the starting time of each row.
+            %    - input 0 if the file does not contain this information.
+            %     (than that file must contain sampleRate information)
+            % 4. startRowIdx: int.
+            %    - indicates which row starts recording obervations               
+            % 5. startColIdx: int.
+            %    - indicates which column starts recording obervations 
+            % 6. sampleRate: double.
+            %    - sampling frequency.
+            %    - input nan if 
+            %
+            % output: none
+            % This function preproces information from the multi-channel data file.
+            % Channel data extraction is handled by other functions
+
+            % read data part of the file (i.e. skip the explanations written in English)
+            data = readmatrix(filename, range = [startRowIdx channelColumnIdx]); 
+
+            % extract channel information and  create a channel list
+            chReader.massiveDataChannelRows = data(:,1);         
+            chReader.channelList = unique(chReader.massiveDataChannelRows);
+
+            % print out the channel list to the user
+            fprintf("This file has %d channels: ", length( chReader.channelList ))
+            transpose(chReader.channelList) %just to print out the list in horizontal format
+
+            % if starting time for each row is available, save it for later use
+            % it will be used for calculating the sampleRate 
+            if timeColumnIdx > 0 % 시간이 기록되어 있으면, 
+                chReader.fileBinTimeStart = data(:, timeColumnIdx- channelColumnIdx + 1);
+            end
+            
+            % save the numeric recording part of the file
+            chReader.massiveData = data(:, (startColIdx - channelColumnIdx + 1):end );
+            chReader.fileTimeColumnIdx = timeColumnIdx;
+            chReader.fileSampleRate = sampleRate;
+        end        
+                
         function channelObject = readSingleChannelFromFile(chReader, organoidNum, channelNum, month)
             channelBoolean = chReader.massiveDataChannelRows == channelNum; %channel num에 해당하는 row만 골라냄 
             channelData = chReader.massiveData(channelBoolean,:); % 그 boolean을 datatset에 적용 
@@ -141,42 +150,42 @@ classdef channelReader < handle
             end
             
             [xResampled, tResampled] = resample(xVector, tVector, sampleRateUsed, 'spline'); %resample 및 interpolation 실행
-            channelObject = channel(xResampled, tResampled, sampleRateUsed, organoidNum, channelNum, month); 
-           
-            
+            channelObject = channel(xResampled, tResampled, sampleRateUsed, organoidNum, channelNum, month);             
         end % function readSingleChannelFromFile
-        
-        
         
         function channelDict = readManyChannelsFromFile(chReader, organoidNum, month)
             fprintf("Reading %d channels at once...\n\n", length(chReader.channelList))
-            channelObjects = {};
+            channelDict = dictionary;
             for i = 1:length(chReader.channelList)
                 channelNum = chReader.channelList(i);
-                channelObjects{i} = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
+                channelObject = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
+                channelDict(channelNum) = channelObject;
             end % for loop
-            channelDict = containers.Map(chReader.channelList, channelObjects);
 
         end % function readAllChannelsFromFile
    
-        
+        function channelPair = readMixedSingleChannelFromFile(chReader, organoidNum, channelNum, month, LFPRange, SURange)
+            channelPair = dictionary;
+            
+            fprintf("LFP:\n")
+            LFPChannelObject = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
+            LFPChannelObject.bandPass(LFPRange)
+            LFPChannelObject.raw = LFPChannelObject.filtered;           
+            channelPair("LFP") = LFPChannelObject;
+            
+            fprintf("SU:\n")
+            SUChannelObject = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
+            SUChannelObject.bandPass(SURange)
+            SUChannelObject.raw = SUChannelObject.filtered;
+            channelPair("SU") = SUChannelObject;   
+        end        
         
         
         
 
-        
-        
-        
-        
-        
-        
-      
-        
- 
-        
-        
-       
-        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
+% part 3. utils       
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                
               
         function t = makeTimeVariable(chReader, nTotalObs, sampleRate)
             tDuration = (nTotalObs / sampleRate); %첫 측정치 timepoint에서 마지막 측정치 timepoint까지의 time interval
