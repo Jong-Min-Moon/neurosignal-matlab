@@ -476,7 +476,26 @@ classdef channel < handle
             ch.spikeThetaAngles = ch.thetaPhases(ch.spikeTimestamps); %spike 발생 시점의 theta angle을 저장
             ch.saveCircularTheta() %cluster별로 나누어 theta phase 값을 저장
         end %end of getThetas
-        
+
+        function [bandWave, bandPhases] = getBand(ch, freqBand)%(*)
+        % added 2023.06.06
+        % slightly modified the function getThetas
+        % for the request "LFP-SU joint analysis"
+        % input: 
+        % 1. freqBand: array of two numbers e.g. [4, 8]
+        % - frequency band used for bandpass filter
+        %
+        % output:
+        % 1. bandWave: 1d array.
+        % - filtered voltage
+        % 2. bandPhases: 1d array.
+        % - filtered phase
+            bandWave = bandpass(ch.raw, freqBand, ch.sf); %apply 4-8 Hz frequency band
+            xHilbert = hilbert(bandWave); % Hilbert transform하여 복소수 형태로 표현 
+            bandPhases = angle(xHilbert); % 실수부와 허수부 사이 각을 계산
+
+        end %end of function getBand
+
         function uniformTest(ch)
             pvals = zeros([ch.nClusters,1]);
             for c = 1 : ch.nClusters

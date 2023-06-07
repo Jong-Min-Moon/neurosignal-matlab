@@ -161,7 +161,6 @@ classdef channelReader < handle
                 channelObject = chReader.readSingleChannelFromFile(organoidNum, channelNum, month);
                 channelDict(channelNum) = channelObject;
             end % for loop
-
         end % function readAllChannelsFromFile
    
         function channelPair = readMixedSingleChannelFromFile(chReader, organoidNum, channelNum, month, LFPRange, SURange)
@@ -180,7 +179,18 @@ classdef channelReader < handle
             channelPair("SU") = SUChannelObject;   
         end        
         
-        
+        function channelDict = readManyMixedChannelsFromFile(chReader, organoidNum, month, LFPRange, SURange)
+            fprintf("Reading %d mixed channels at once...\n\n", length(chReader.channelList))
+            channelDict = dictionary;
+            for i = 1:length(chReader.channelList)
+                channelNum = chReader.channelList(i);
+                channelObject = chReader.readMixedSingleChannelFromFile(organoidNum, channelNum, month, LFPRange, SURange);
+                keyStringLFP = channelNum + ", LFP";
+                keyStringSU = channelNum + ", SU";
+                channelDict(keyStringLFP) = channelObject("LFP");
+                channelDict(keyStringSU) = channelObject("SU");
+            end % for loop
+        end % function readManyMixedChannelsFromFile        
         
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%        
