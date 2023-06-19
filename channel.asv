@@ -846,12 +846,13 @@ classdef channel < handle
                 end %end of {if nBursts == 0}
                 ch.bursts = bursts;
             end %end of the function   
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+   
 %%%% phase analysis per frequency band
 % 1. getBand
 % 2. saveCircularBand
 
-        function [bandWaveOut, bandPhaseOut] = getBand(ch, freqBand)%(*)
+function [bandWaveOut, bandPhaseOut] = getBand(ch, frequencyRange)
         % added 2023.06.06
         % slightly modified the function getThetas
         % for the request "LFP-SU joint analysis"
@@ -864,9 +865,10 @@ classdef channel < handle
         % - filtered voltage
         % 2. bandPhase: 1d array.
         % - filtered phase
-            ch.bandWave = bandpass(ch.raw, freqBand, ch.sf); %apply bandpass filter with frequency band
-            xHilbert = hilbert(ch.bandWave); % Hilbert transform하여 복소수 형태로 표현 
-            ch.bandPhase = angle(xHilbert); % 실수부와 허수부 사이 각을 계산
+            ch.bandWave = bandpass(ch.raw, frequencyRange, ch.sf); %uses the raw signal, so the function do not applies iteratively.
+            analytic_signal = hilbert(ch.bandWave); % Hilbert transform하여 복소수 형태로 표현 
+            ch.bandAmplitude = abs()
+            ch.bandPhase = angle(analytic_signal); % 실수부와 허수부 사이 각을 계산
             ch.spikeBandAngles = ch.bandPhase(ch.spikeTimestamps); %spike 발생 시점의 angle을 저장
             ch.saveCircularBand() %cluster별로 나누어 phase 값을 저장
 
