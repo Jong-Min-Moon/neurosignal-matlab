@@ -551,20 +551,10 @@ classdef channel < handle
  
 
         function drawRaster(ch, color)
-            % from CyborgBrainOrg.m
+            drawer_raster_instance = drawer_raster();
+            drawer_raster_instance.drawRaster(ch, color);
+        end
 
-            for ii = 1:length(ch.spikeTimestamps)
-                spikeTimestampTuple = ch.startTime + [ch.spikeTimestamps(ii), ch.spikeTimestamps(ii)]/ch.sf;
-                p = plot(spikeTimestampTuple, [-1,1], 'k');
-                p.Color = color;
-                hold on
-            end
-            hold off
-            ylim([-2, 2]);
-            title('Raster plot');
-            xlabel('time(s)');
-            ylabel('Raster');
-        end %drawRaster
         
         function drawColoredRaster(ch, clusterColors)
             % from CyborgBrainOrg.m

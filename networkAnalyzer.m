@@ -138,7 +138,7 @@ classdef networkAnalyzer < handle
         function init_score_mat(na)
 
         end
-
+        
         function py_spikeIntoDist(na, train_1, train_2, nTimestamps)
             % turn spikes into SpikeTrain objects in Python
             pyrun("train_1 = np.array(matlab_array_1)", matlab_array_1 = train_1);
