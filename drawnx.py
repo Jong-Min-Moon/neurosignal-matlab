@@ -14,8 +14,11 @@ import interpol as itp
 import random
 
 
-pwd_save = os.path.dirname(os.path.realpath(__file__))
-pwd = pwd_save + "/pkls"
+pwd_thisfile = os.path.dirname(os.path.realpath(__file__))
+pwd = pwd_thisfile + "/pkls"
+
+pwd_save = pd.read_pickle(pwd + "/savepath.pkl")[0]
+
 
 distMat = np.load(pwd + "/score_matrix.npy")
 

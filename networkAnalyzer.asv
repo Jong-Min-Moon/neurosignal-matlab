@@ -94,8 +94,9 @@ classdef networkAnalyzer < handle
             end
         end 
         
-        function detectSpikes(na, thres, preTime, postTime)
+        function n_spike_table = detectSpikes(na, thres, preTime, postTime)
             % add한 모든 채널에서 spike detection 수행
+            nspike_array = [];
             for i = 1 : length(na.channelList)
                 % pick a channel object
                 channelNum = na.channelList(i);
@@ -103,27 +104,36 @@ classdef networkAnalyzer < handle
 
                 % do the job
                 fprintf("channel %d ", channelNum)
-                channel.detectSpikes(thres, preTime, postTime);
+                nspike_array(i) = channel.detectSpikes(thres, preTime, postTime);
             end
+            n_spike_table = array2table( ...
+                nspike_array', ...
+                'VariableNames', cellstr("n_spike"), ...
+                'RowNames', cellstr("node" + na.channelList));
             na.is_spike_detected = true;
 
                 
 
         end
 
-        function getMeanSpikeAmplitude(na, range_start, range_end, isRaw)
-            % add한 모든 채널에서  수행
+        function average_amp_table = getMeanSpikeAmplitude(na, range_start, range_end, isRaw)
+            % add한 모든 채널에서 계산 수행
+            average_amp_array = [];
             for i = 1 : length(na.channelList)
                 % pick a channel object
                 channelNum = na.channelList(i);
                 channel = na.channels(channelNum);
 
                 % do the job
-                fprintf("channel %d ", channelNum)
-                channel.detectSpikes(thres, preTime, postTime);
-            end
-            na.is_spike_detected = true;
-        end
+                %fprintf("channel %d ", channelNum)
+                [average_amp, ] = channel.getMeanSpikeAmplitude(range_start, range_end, isRaw);
+                average_amp_array(i) = average_amp;
+            end % end of for
+            average_amp_table = array2table( ...
+                average_amp_array', ...
+                'VariableNames', cellstr("average_amp"), ...
+                'RowNames', cellstr("node" + na.channelList));
+        end % end of function
         
         function init_score_mat(na)
 
@@ -364,6 +374,10 @@ classdef networkAnalyzer < handle
             filepath_camera = na.filepath + "/camera.npy";
             pyrun("np.save(path, camera)", path = filepath_camera); 
 
+            % graph save path
+            pyrun("pwd_save = n", edge_startcolor = edge_startcolor, edge_endcolor = edge_endcolor);
+            filepath_colors = na.filepath + "/colors.pkl";
+            pyrun("colors.to_pickle(path)", path = filepath_colors);
 
             command = na.pythonpath + " " + na.pyfilepath + "/drawnx.py";
             system(command)

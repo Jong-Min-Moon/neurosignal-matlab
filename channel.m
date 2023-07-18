@@ -311,7 +311,7 @@ classdef channel < handle
 
 
             %%
-        function detectSpikes(ch, thres, preTime, postTime)
+        function count = detectSpikes(ch, thres, preTime, postTime)
             % from CyborgBrainOrg.m
             
             %주의:threshold에 minus가 붙어 있음, 즉 이 알고리즘은 local minimum을 찾는 알고리즘 

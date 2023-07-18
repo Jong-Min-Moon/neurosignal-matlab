@@ -94,8 +94,9 @@ classdef networkAnalyzer < handle
             end
         end 
         
-        function detectSpikes(na, thres, preTime, postTime)
+        function n_spike_table = detectSpikes(na, thres, preTime, postTime)
             % add한 모든 채널에서 spike detection 수행
+            nspike_array = [];
             for i = 1 : length(na.channelList)
                 % pick a channel object
                 channelNum = na.channelList(i);
@@ -103,8 +104,12 @@ classdef networkAnalyzer < handle
 
                 % do the job
                 fprintf("channel %d ", channelNum)
-                channel.detectSpikes(thres, preTime, postTime);
+                nspike_array(i) = channel.detectSpikes(thres, preTime, postTime);
             end
+            n_spike_table = array2table( ...
+                nspike_array', ...
+                'VariableNames', cellstr("n_spike"), ...
+                'RowNames', cellstr("node" + na.channelList));
             na.is_spike_detected = true;
 
                 
@@ -369,6 +374,10 @@ classdef networkAnalyzer < handle
             filepath_camera = na.filepath + "/camera.npy";
             pyrun("np.save(path, camera)", path = filepath_camera); 
 
+            % graph save path
+            pyrun("pwd_save = pd.Series([savepath])", savepath = na.savepath);
+            filepath_savepath = na.filepath + "/savepath.pkl";
+            pyrun("pwd_save.to_pickle(path)", path = filepath_savepath);
 
             command = na.pythonpath + " " + na.pyfilepath + "/drawnx.py";
             system(command)
