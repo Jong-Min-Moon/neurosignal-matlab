@@ -46,21 +46,23 @@ classdef networkAnalyzer < handle
         end
 
 
-        function deleteChannel(na, channelNum)
-            fprintf("Deleted channal %d\n", channelNum)
+        function deleteChannel(na, channelNumArray)
+            for channelNum = channelNumArray
+                fprintf("Deleted channal %d\n", channelNum)
 
-            % delete from channelList
-            idx_channelList = find(na.channelList == channelNum);
-            na.channelList(idx_channelList) = [];
-            
-            % delete from channels
-            remove(na.channels, channelNum);
-
-            % delet from positions
-            idx_positions = find( na.positions(:,2) == channelNum);
-            na.positions(idx_positions,:) = [];
-            fprintf("%d channels left\n", length(na.channelList))
-
+                % delete from channelList
+                idx_channelList = find(na.channelList == channelNum);
+                na.channelList(idx_channelList) = [];
+                
+                % delete from channels
+                na.channels(channelNum) = [];
+               % remove(na.channels, channelNum);
+    
+                % delet from positions
+                idx_positions = find( na.positions(:,2) == channelNum);
+                na.positions(idx_positions,:) = [];
+                fprintf("%d channels left\n", length(na.channelList))
+            end
         end
         
         function setChannelPosition2d(na, channelNum, xpos, ypos)
