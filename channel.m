@@ -344,7 +344,18 @@ classdef channel < handle
             fprintf('number of spikes found : %d\n', ch.nSpikes);
             ch.calculateTotalMeanSpikes(); %mean spike 계산 후 저장
         end %end of detectSpikes
-        
+
+        function [average_amp, amp_list] = getMeanSpikeAmplitude(ch, range_start, range_end, isRaw)
+            cmsa_instance = calculaterMeanSpikeAmplitude(ch);
+
+            if isRaw
+            [average_amp, amp_list] = cmsa_instance.get_average_amp_raw(range_start, range_end);
+            else
+            [average_amp, amp_list] = cmsa_instance.get_average_amp_filtered(range_start, range_end);
+            end
+        end
+
+
         
         function detectSpikesPositive(ch, thres, preTime, postTime)
             % from CyborgBrainOrg.m
