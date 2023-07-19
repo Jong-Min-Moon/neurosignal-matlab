@@ -1,4 +1,4 @@
-function [ hex ] = rgb2hex(rgb)
+function hex_new = rgb2hex(rgb)
 % rgb2hex converts rgb color values to hex color format. 
 % 
 % This function assumes rgb values are in [r g b] format on the 0 to 1
@@ -59,6 +59,20 @@ end
 
 hex(:,2:7) = reshape(sprintf('%02X',rgb.'),6,[]).'; 
 hex(:,1) = '#';
+
+size_hex = size(hex);
+n_colors = size_hex(1);
+hex_new_temp = 1:n_colors;
+hex_new_temp = string(hex_new_temp);
+for ii = 1 : n_colors
+    hex_new_temp(ii) = hex(ii,:);
+end
+
+hex_new = "";
+for ii = 1 : n_colors
+    hex_new = hex_new + hex_new_temp(ii);
+end
+
 
 
 end

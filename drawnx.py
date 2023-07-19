@@ -149,18 +149,28 @@ z_nodes = np.array([ pos[ channelNum ][2] for channelNum in channel_list])[node_
 
 d = dict(G.degree)
 degree_values = d.values()
+
+
+
+# degree normalization
 node_size_normalized = np.fromiter(degree_values, dtype = float)
 degree_values = list(d.values())
-node_size_normalized = (node_size_normalized - np.min(node_size_normalized))/(np.max(node_size_normalized) - np.min(node_size_normalized))
-node_size_normalized = np.array(node_size_normalized)[node_filter]# NODE FILTERING
+min_degree = np.min(node_size_normalized)
+max_degree = np.max(node_size_normalized)
+if min_degree == max_degree:
+    node_size_normalized == node_size_normalized/max_degree
+else:
+    node_size_normalized = (node_size_normalized - min_degree)/(max_degree - min_degree)
 
+# NODE FILTERING
+node_size_normalized = np.array(node_size_normalized)[node_filter]
 channel_list_filtered = np.array(channel_list)[node_filter]
 
 # community color
 if display_degree:
-    node_size= basic_size + multiplier * (node_size_normalized)
+    node_size= basic_size + multiplier * (1+node_size_normalized)
 if not display_degree:
-    node_size= basic_size + multiplier * (0 * (node_size_normalized) + 1)
+    node_size= basic_size + multiplier * (0 * (1+node_size_normalized) + 1)
 
 
 # node color
@@ -168,7 +178,6 @@ if display_community_color:
     #color_list_node = itp.interpolate(node_startcolor, node_endcolor, max(Feature_color_sub)+1) 
     #color_list_node.[0]= '#f0efef' #gray
     color_list_node[0] = "#f0efef"
-    print(color_list_node)
 
     for i, color_code in enumerate(color_list_community):
         channelNum = channel_list_filtered[i]
