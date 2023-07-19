@@ -1,5 +1,7 @@
 classdef networkAnalyzer < handle
     properties
+       positionSetter
+
        spikeTrains
        channels
        channelList
@@ -23,6 +25,8 @@ classdef networkAnalyzer < handle
     
     methods
         function na = networkAnalyzer(filepath, pythonpath, savepath)
+            na.positionSetter = setterPosition();
+
             na.pyfilepath = filepath;
             na.filepath = na.pyfilepath + "/pkls";
             na.pythonpath = pythonpath;
@@ -69,20 +73,22 @@ classdef networkAnalyzer < handle
             end
         end
         
-        function setChannelPosition2d(na, channelNum, xpos, ypos)
-            idx = find( na.positions(:,2) == channelNum);
-            na.positions(idx, 3) = xpos;
-            na.positions(idx, 4) = ypos;
-        end
 
+        %%%% positions 
         function setChannelPosition3d(na, channelNum, xpos, ypos, zpos)
-            idx = find( na.positions(:,2) == channelNum);
-            na.positions(idx, 3) = xpos;
-            na.positions(idx, 4) = ypos;
-            na.positions(idx, 5) = zpos;
-            fprintf("set channel %d's position as (%f, %f, %f)\n", channelNum, na.positions(idx, 3), na.positions(idx, 4), na.positions(idx, 5))
+            na.positions = na.positionSetter.setChannelPosition3d( ...
+                na.positions, ...
+                channelNum, xpos, ypos, zpos);
         end
 
+        function setChannelPosition3dArray(na, positions_input_array)
+            na.positions = na.positionSetter.setChannelPosition3dArray( ...
+                na.positions, ...
+                positions_input_array);
+        end
+        %%%% end of positions
+
+        
         function bandPass(na, bandRange)
             for i = 1 : length(na.channelList)
                 % pick a channel object
@@ -302,10 +308,11 @@ classdef networkAnalyzer < handle
             na.louvain_count_groups = int64(py.numpy.load(prelim_count_partition_path));
         end
 
-        function get_group_info(na)
+        function n_group = get_group_info(na)
             na.louvain_prelim();
             pause(7);
             na.get_n_groups;
+            n_group = na.louvain_n_groups;
             fprintf("number of groups: %i\n", na.louvain_n_groups);
             fprintf("number of channels per group:\n");
             fprintf("   group / number of channels")

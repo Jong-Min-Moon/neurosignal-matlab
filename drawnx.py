@@ -158,9 +158,9 @@ channel_list_filtered = np.array(channel_list)[node_filter]
 
 # community color
 if display_degree:
-    node_size= basic_size + multiplier * (1 + node_size_normalized)
+    node_size= basic_size + multiplier * (node_size_normalized)
 if not display_degree:
-    node_size= basic_size + multiplier * (0 * (1 + node_size_normalized) + 1)
+    node_size= basic_size + multiplier * (0 * (node_size_normalized) + 1)
 
 
 # node color
