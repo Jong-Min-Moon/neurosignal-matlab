@@ -129,7 +129,10 @@ for channelNum in channel_list: # loop over channels
 # save as csv (2022.12.08)
 Feature_color_sub = np.array(color_list_community)  # cluster num = 1, 2, 3, .... not 0 , 1, 2, ...
 cluster_membership_pd = pd.DataFrame({"node" : partition.keys(), "community" : partition.values()})
-cluster_membership_pd.groupby("community").agg(list).to_csv("community_info.csv")  
+
+cluster_membership_pd.groupby("community").agg(list).to_csv(
+    os.path.join(pwd_save, "community_info.csv")
+    )  
 
 
 layout = go.Layout(title="Community structure of the electrodes",
