@@ -21,6 +21,7 @@ classdef networkAnalyzer < handle
        is_spike_detected
        louvain_n_groups
        louvain_count_groups
+       random_node_color
     end
     
     methods
@@ -115,14 +116,14 @@ classdef networkAnalyzer < handle
             n_spike_table = array2table( ...
                 nspike_array', ...
                 'VariableNames', cellstr("n_spike"), ...
-                'RowNames', cellstr("node" + na.channelList));
+                'RowNames', cellstr("channel" + na.channelList));
             na.is_spike_detected = true;
 
                 
 
         end
 
-        function average_amp_table = getMeanSpikeAmplitude(na, range_start, range_end, isRaw)
+        function average_amp_table = getMeanSpikeAmplitude(na)
             % add한 모든 채널에서 계산 수행
             average_amp_array = [];
             for i = 1 : length(na.channelList)
@@ -132,13 +133,13 @@ classdef networkAnalyzer < handle
 
                 % do the job
                 %fprintf("channel %d ", channelNum)
-                [average_amp, ] = channel.getMeanSpikeAmplitude(range_start, range_end, isRaw);
+                [average_amp, ] = channel.getMeanSpikeAmplitude();
                 average_amp_array(i) = average_amp;
             end % end of for
             average_amp_table = array2table( ...
                 average_amp_array', ...
                 'VariableNames', cellstr("average_amp"), ...
-                'RowNames', cellstr("node" + na.channelList));
+                'RowNames', cellstr("channel" + na.channelList));
         end % end of function
         
         function init_score_mat(na)
@@ -172,7 +173,7 @@ classdef networkAnalyzer < handle
             % calculate and save entries of score matrix in python.
             % We just fetch each entry into matlab.
             for i = 1 : na.nChannels
-                fprintf("calculating sync score between %ith and other channels...\n", i)
+                fprintf("calculating sync score between %ith and other channels...\n", na.channelList(i))
                 for j = i+1 : na.nChannels
                     % pick two channel objects
                     channel_1 = na.channels(na.channelList(i));
@@ -274,14 +275,14 @@ classdef networkAnalyzer < handle
                 % sync score table
             na.syncScores = array2table( ...
                 dist, ...
-                'VariableNames', cellstr("node" + (1:na.nChannels)), ...
-                'RowNames', cellstr("node" + (1:na.nChannels)));
+                'VariableNames', cellstr("channel" + na.channelList), ...
+                'RowNames', cellstr("channel" + na.channelList));
   
                 % degree table
             na.nConnects = array2table( ...
                 nansum((dist>na.thres),2), ...
                 'VariableNames', {'number of connected'}, ...
-                'RowNames',cellstr("node" + (1:na.nChannels)));              
+                'RowNames',cellstr("channel" + na.channelList));              
         end
         
 
@@ -316,6 +317,7 @@ classdef networkAnalyzer < handle
             fprintf("number of groups: %i\n", na.louvain_n_groups);
             fprintf("number of channels per group:\n");
             fprintf("   group / number of channels")
+            na.random_node_color = rgb2hex(rand([n_group 3]));
             na.louvain_count_groups
         end
 
@@ -340,7 +342,13 @@ classdef networkAnalyzer < handle
             pyrun("colors.to_pickle(path)", path = filepath_colors);
             
             %node colors
-            pyrun("colors_node = pd.Series(color_list_node)", color_list_node = color_list_node);
+            color_list_node
+            if color_list_node(1:6) == 'random'
+                color_list_final = na.random_node_color;
+            else
+                color_list_final = color_list_node;
+            end
+            pyrun("colors_node = pd.Series(color_list_node)", color_list_node = color_list_final);
             filepath_colors_node = na.filepath + "/colors_node.pkl";
             pyrun("colors_node.to_pickle(path)", path = filepath_colors_node);
 

@@ -37,10 +37,9 @@ edge_startcolor = colors.iloc[0]
 edge_endcolor   = colors.iloc[1]
 
 # node colors
-color_list_node = list(pd.read_pickle(pwd + "/colors_node.pkl"))
-color_list_node = "".join(color_list_node)
-color_list_node = color_list_node.split("#")
-color_list_node = ["#" + code for code in color_list_node]
+commu_color_pair = list(pd.read_pickle(pwd + "/colors_node.pkl"))
+
+
 # limits
 lims = pd.read_pickle(pwd + "/lims.pkl")
 lim_degree_low  = lims.iloc[0]
@@ -97,6 +96,7 @@ for i in range(n_nodes):
 
 
             #run Louvain method. result: dictionary {channelNum:communityNum}
+np.random.seed(1)
 partition = lvcm.best_partition(graph=G, partition=None, random_state = 1)
 
 
@@ -113,22 +113,34 @@ for com in partition_list: # loop over each community
     max_k_w = max_k_w + [list_nodes]
      # list comprehension. concat [member list] of each community
 
-color_list_community = []
-color_list_community_csv = []
+channel_commu_pair = {}
 color_code_now = 1
 for channelNum in channel_list: # loop over channels
     for color_code, nodes_sharing_community in enumerate(max_k_w): #loop over communities
         if int(channelNum) in nodes_sharing_community:
-            color_list_community_csv.append(color_code)
             if len(nodes_sharing_community) == 1:
-                color_list_community.append(0)
+                channel_commu_pair[int(channelNum)] = 0
             else:
-                color_list_community.append(color_code+1)
+                channel_commu_pair[int(channelNum)] = color_code + 1
 
+n_commu = max(channel_commu_pair.values())
+if commu_color_pair[:4] == 'grad':
+    commu_color_pair = commu_color_pair[4:]
+    commu_color_pair = commu_color_pair.split("#")
+    commu_color_pair = ["#" + code for code in commu_color_pair]
+
+    commu_color_pair = itp.interpolate(commu_color_pair[0], commu_color_pair[1], n_commu-1) 
+    print(commu_color_pair)
+else:
+    commu_color_pair = "".join(commu_color_pair)
+    commu_color_pair = commu_color_pair.split("#")
+    commu_color_pair = ["#" + code for code in commu_color_pair]
+    commu_color_pair = dict(zip(
+        list(range(len(commu_color_pair))), commu_color_pair
+    ))
 
 # save as csv (2022.12.08)
-Feature_color_sub = np.array(color_list_community)  # cluster num = 1, 2, 3, .... not 0 , 1, 2, ...
-cluster_membership_pd = pd.DataFrame({"node" : partition.keys(), "community" : partition.values()})
+cluster_membership_pd = pd.DataFrame({"node" : channel_commu_pair.keys(), "community" : channel_commu_pair.values()})
 
 cluster_membership_pd.groupby("community").agg(list).to_csv(
     os.path.join(pwd_save, "community_info.csv")
@@ -175,28 +187,34 @@ if display_degree:
 if not display_degree:
     node_size= basic_size + multiplier * (0 * (1+node_size_normalized) + 1)
 
-
+print(degree_dict)
 # node color
 if display_community_color:
-    #color_list_node = itp.interpolate(node_startcolor, node_endcolor, max(Feature_color_sub)+1) 
-    #color_list_node.[0]= '#f0efef' #gray
-    color_list_node[0] = "#f0efef"
+    
+    #commu_color_pair.[0]= '#f0efef' #gray
+    commu_color_pair[0] = "#f0efef"
+    print(commu_color_pair)
+    print(channel_commu_pair)
+    for i in range(len(channel_list_filtered)):
+        channelNum = int(channel_list_filtered[i])
+        community_now =  channel_commu_pair[channelNum]
+        color_now = commu_color_pair[community_now]
+        degree_now = degree_dict[str(channelNum)]
+    #for i, color_code in enumerate(channel_commu_pair):
+        
 
-    for i, color_code in enumerate(color_list_community):
-        channelNum = channel_list_filtered[i]
-
-        if i == 0: #draw colorbar
-            node_dict = dict(
+        #if i == 0: #draw colorbar
+        #    node_dict = dict(
+        #                        symbol='circle',
+        #                                size= node_size[i],                           
+        #                                color=commu_color_pair[color_code], #color the nodes according to their community
+        #                                line=dict(color='black', width=0.5),
+        #                                )
+        #else: #do not draw colorbar
+        node_dict = dict(
                                 symbol='circle',
                                         size= node_size[i],                           
-                                        color=color_list_node[color_code], #color the nodes according to their community
-                                        line=dict(color='black', width=0.5),
-                                        )
-        else: #do not draw colorbar
-            node_dict = dict(
-                                symbol='circle',
-                                        size= node_size[i],                           
-                                        color=color_list_node[color_code], #color the nodes according to their community
+                                        color=color_now, #color the nodes according to their community
                                         line=dict(color='black', width=0.5)
                                         )
 
@@ -207,7 +225,7 @@ if display_community_color:
             z = np.array(z_nodes[i]),
             mode='markers',
             marker = node_dict,
-            text = f"Channel {channelNum} has degree {degree_dict[channelNum]} and belongs to community {partition[channelNum]+1}",
+            text = f"Channel {channelNum} has degree {degree_now} and belongs to community {community_now}",
             hoverinfo='text',
             showlegend = True
         ))
@@ -226,7 +244,7 @@ if not display_community_color:
         z=z_nodes,
         mode='markers',
         marker = node_dict,
-        text=[f"Channel {channelNum} has degree {degree_dict[channelNum]} and belongs to community {partition[channelNum]+1}" for channelNum in channel_list_filtered],
+        text=[f"Channel {channelNum} has degree {degree_now} and belongs to community {community_now}" for channelNum in channel_list_filtered],
         hoverinfo='text',
         showlegend = True
         ))

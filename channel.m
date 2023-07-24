@@ -345,15 +345,13 @@ classdef channel < handle
             ch.calculateTotalMeanSpikes(); %mean spike 계산 후 저장
         end %end of detectSpikes
 
-        function [average_amp, amp_list] = getMeanSpikeAmplitude(ch, range_start, range_end, isRaw)
+        function [average_amp, amp_list] = getMeanSpikeAmplitude(ch)
             cmsa_instance = calculaterMeanSpikeAmplitude(ch);
 
-            if isRaw
-            [average_amp, amp_list] = cmsa_instance.get_average_amp_raw(range_start, range_end);
-            else
-            [average_amp, amp_list] = cmsa_instance.get_average_amp_filtered(range_start, range_end);
+         
+            [average_amp, amp_list] = cmsa_instance.get_average_amp();
             end
-        end
+       
 
 
         
