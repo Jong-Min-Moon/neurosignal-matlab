@@ -301,12 +301,20 @@ classdef networkAnalyzer < handle
             system(command)
         end
 
-        function get_n_groups(na)
-            prelim_n_partition_path = na.filepath + "/prelim_n_partition.npy";
-            na.louvain_n_groups = int64(py.numpy.load(prelim_n_partition_path));
+        function louvain_count_groups = get_n_groups(na)
+            community_info_path = na.filepath  + "/community_info.pkl";
+            groupinfotable = py.pandas.read_pickle(community_info_path)
+            %pyrun("groupinfotable = pd.read_pickle(community_info_path)", community_info_path=community_info_path)
+            %pyrun("print(groupinfotable)")
+            %pyrun("n_group = groupinfotable.shape[0]")
 
-            prelim_count_partition_path = na.filepath + "/prelim_count_partition.npy";
-            na.louvain_count_groups = int64(py.numpy.load(prelim_count_partition_path));
+            %prelim_n_partition_path = na.filepath + "/prelim_n_partition.npy";
+            %na.louvain_n_groups = int64(py.numpy.load(prelim_n_partition_path));
+
+            %prelim_count_partition_path = na.filepath + "/prelim_count_partition.npy";
+            %na.louvain_count_groups = int64(py.numpy.load(prelim_count_partition_path));
+            shape_louvain = double(groupinfotable.shape)
+            na.louvain_count_groups = shape_louvain(1);
         end
 
         function n_group = get_group_info(na)
@@ -315,10 +323,8 @@ classdef networkAnalyzer < handle
             na.get_n_groups;
             n_group = na.louvain_n_groups;
             fprintf("number of groups: %i\n", na.louvain_n_groups);
-            fprintf("number of channels per group:\n");
-            fprintf("   group / number of channels")
             na.random_node_color = rgb2hex(rand([n_group 3]));
-            na.louvain_count_groups
+            %na.louvain_count_groups
         end
 
         function louvain(na, ...

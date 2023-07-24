@@ -38,7 +38,7 @@ edge_endcolor   = colors.iloc[1]
 
 # node colors
 commu_color_pair = list(pd.read_pickle(pwd + "/colors_node.pkl"))
-
+commu_color_pair = "".join(commu_color_pair)
 
 # limits
 lims = pd.read_pickle(pwd + "/lims.pkl")
@@ -114,7 +114,6 @@ for com in partition_list: # loop over each community
      # list comprehension. concat [member list] of each community
 
 channel_commu_pair = {}
-color_code_now = 1
 for channelNum in channel_list: # loop over channels
     for color_code, nodes_sharing_community in enumerate(max_k_w): #loop over communities
         if int(channelNum) in nodes_sharing_community:
@@ -123,22 +122,33 @@ for channelNum in channel_list: # loop over channels
             else:
                 channel_commu_pair[int(channelNum)] = color_code + 1
 
-n_commu = max(channel_commu_pair.values())
-if commu_color_pair[:4] == 'grad':
-    commu_color_pair = commu_color_pair[4:]
-    commu_color_pair = commu_color_pair.split("#")
-    commu_color_pair = ["#" + code for code in commu_color_pair]
+commu_list = set(channel_commu_pair.values())
+new_commu_list = list(range(len(commu_list)))
+commu_list = sorted(list(commu_list))
+channel_converter = dict(zip(commu_list, new_commu_list))
 
-    commu_color_pair = itp.interpolate(commu_color_pair[0], commu_color_pair[1], n_commu-1) 
+for channel in channel_commu_pair:
+    old_commu = channel_commu_pair[channel] 
+    new_commu = channel_converter[old_commu]
+    channel_commu_pair[channel]  = new_commu
+
+n_commu = max(channel_commu_pair.values())
+print(commu_color_pair[:4])
+if commu_color_pair[:4] == 'grad':  
+    is_display_node_colorbar = True
+    commu_color_pair = commu_color_pair[4:]
     print(commu_color_pair)
+    commu_color_pair = [commu_color_pair[:7], commu_color_pair[7:]]
+    commu_color_pair = itp.interpolate(commu_color_pair[0], commu_color_pair[1], n_commu-1) 
 else:
+    is_display_node_colorbar = False
     commu_color_pair = "".join(commu_color_pair)
     commu_color_pair = commu_color_pair.split("#")
     commu_color_pair = ["#" + code for code in commu_color_pair]
-    commu_color_pair = dict(zip(
-        list(range(len(commu_color_pair))), commu_color_pair
+commu_color_pair = dict(zip(
+        list(range(1,len(commu_color_pair)+1)), commu_color_pair
     ))
-
+commu_color_pair[0] = "#f0efef"
 # save as csv (2022.12.08)
 cluster_membership_pd = pd.DataFrame({"node" : channel_commu_pair.keys(), "community" : channel_commu_pair.values()})
 
@@ -190,33 +200,30 @@ if not display_degree:
 print(degree_dict)
 # node color
 if display_community_color:
-    
-    #commu_color_pair.[0]= '#f0efef' #gray
-    commu_color_pair[0] = "#f0efef"
-    print(commu_color_pair)
-    print(channel_commu_pair)
     for i in range(len(channel_list_filtered)):
         channelNum = int(channel_list_filtered[i])
         community_now =  channel_commu_pair[channelNum]
+        print(community_now)
         color_now = commu_color_pair[community_now]
         degree_now = degree_dict[str(channelNum)]
     #for i, color_code in enumerate(channel_commu_pair):
         
 
-        #if i == 0: #draw colorbar
-        #    node_dict = dict(
-        #                        symbol='circle',
-        #                                size= node_size[i],                           
-        #                                color=commu_color_pair[color_code], #color the nodes according to their community
-        #                                line=dict(color='black', width=0.5),
-        #                                )
-        #else: #do not draw colorbar
-        node_dict = dict(
-                                symbol='circle',
-                                        size= node_size[i],                           
-                                        color=color_now, #color the nodes according to their community
-                                        line=dict(color='black', width=0.5)
-                                        )
+        if is_display_node_colorbar == 1: #draw colorbar
+            node_dict = dict(
+            symbol='circle',
+            size= node_size[i],                           
+            color=color_now, #color the nodes according to their community
+            line = dict(color='black', width=0.5),
+            colorbar = dict(thickness=20, title= "communities", xanchor = "right")
+            )
+        else: #do not draw colorbar
+            node_dict = dict(
+            symbol='circle',
+            size= node_size[i],                           
+            color=color_now, #color the nodes according to their community
+            line=dict(color='black', width=0.5)
+            )
 
         fig.add_trace( go.Scatter3d(
             name = "Community",
