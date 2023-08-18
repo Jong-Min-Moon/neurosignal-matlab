@@ -93,8 +93,6 @@ cluster_membership_pd.groupby("community").agg(list).to_pickle(pwd + "/community
 
 
 
-
-
 #n_partition = np.array(max(partition_list) + 1)
 #np.save(pwd + "/prelim_n_partition.npy", n_partition)
 

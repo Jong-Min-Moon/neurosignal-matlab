@@ -136,6 +136,12 @@ classdef networkAnalyzer < handle
                 [average_amp, ] = channel.getMeanSpikeAmplitude();
                 average_amp_array(i) = average_amp;
             end % end of for
+            for ii = 1:length(na.channelList)
+                channelNum = na.channelList(ii);
+                averageAmp = average_amp_array(ii);
+                fprintf("channel %i average amplitude: %.15f\n", channelNum, averageAmp);
+            end
+
             average_amp_table = array2table( ...
                 average_amp_array', ...
                 'VariableNames', cellstr("average_amp"), ...
