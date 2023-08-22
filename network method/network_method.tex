@@ -1,0 +1,61 @@
+\documentclass[11pt]{article}
+\usepackage{xcolor} %textcolor
+\begin{document}
+
+
+\section{Method}
+Simple methods that do not require explanation in \texttt{summary\_examples\_multichannel.mlx}
+\begin{itemize}
+	\item 0.2 ISI
+	\item 
+\end{itemize}
+\subsection{ spike detection (0.2. in \texttt{summary\_examples\_multichannel.mlx})}
+In order to detect neural spikes and build spike trains, we utilize a previous reported MATLAB spike-sorting algorithm~\cite{le_floch_stretchable_2022}.
+The signal is first filtered bandpass filtered~(\textcolor{red}{300 -- 6000 Hz or 100 -- 6000 Hz}) using the MATLAB function \texttt{bandpass}.
+Then any timepoint where the signal amplitude is lower than -\textcolor{red}{5}*standard deviation of the filtered  signal is considered as the peak of a spike.
+We slice \textcolor{red}{2} milliseconds back and forth from the peak to make a spike waveform.
+
+\subsection{burst detection}
+For burst detection in spike trains, we follow~\cite{fair_electrophysiological_2020} to adopt MaxInterval method. 
+It defines bursts using five pre-defined threshold parameters\textemdash
+max ISI at start of burst,
+max ISI in burst,
+min burst duration,
+min interburst interval,
+and
+min number of spikes in burst.
+Any series of spikes that satisfies all of these thresholds is considered as a burst. We set the threshold as \textcolor{red}{300, 301, 10, 50, 200}, respectively.
+
+\subsection{spike sorting through PCA and k-means~(0.4, 0.5 in \texttt{summary\_examples\_multichannel.mlx})}
+In order to sort the detected spike waveforms that originates from different neurons, we apply dimension reduction and clustering algorithms.
+We first use principal component analysis (MATLAB function \texttt{pca} to reduce each spike waveform into a two-dimensional vector.
+Then we cluster these reduced vectors using k-means clustering algorithm (MATLAB function \texttt{kmeans}), which clusters the vectors into the pre-specified number of groups.
+We set the number of groups as \textcolor{red}{3}.
+
+\subsection{Spike sorting quality metrics}
+
+\subsection{3d network graph}
+
+
+In order to measure the connectivity between electrodes, we follow the synchronized score approach of \cite{lam_tissue-specific_2019}.
+To calculate the synchronized score between two spike trains, we first measure SPIKE-distance~\cite{kreuz_monitoring_2013} using Python environment~(version 3.9.2) and Python package \textsc{Pyspike}~(version 0.7.0)~\cite{mulansky_pyspikepython_2016}.
+\textcolor{red}{The SPIKE-distance is normalized to average of 1000 randomly generated baseline values; each baseline value is the SPIKE-distance between two uniformly randomly generated spike trains.}
+Then, synchronized scores are defined as SPIKE-distance values subtracted from 1.
+These sync scores range from 0 to 1, where a higher score indicates a high degree of synchrony.
+
+
+
+
+Community structure on the electrodes is examined by graph-theoretic Louvain algorithm~\cite{PhysRevE.69.026113, blondel_fast_2008} which is based on modularity optimization.
+In the analysis, we model the electrodes as nodes~(e.g., circles in the network map), whose 3d positions represent the position of the actual electrode. 
+We set synchronized scores between every pair of active electrodes as edge~(e.g., lines in the network map) weights between the corresponding nodes.
+The edges with synchronized scores less than \textcolor{red}{0.5} were filtered out.
+The result of the Louvain algorithm is visualized through color and size, using the Python package \texttt{plotly}~(version  5.9.0).
+Nodes with the same color (i.e., electrodes) belong to the same community network.
+Synchronization scores are color-mapped, ranged from \textcolor{red}{0 (blue) to 1 (red)}.
+In addition, the larger the number of connected electrodes becomes, the larger the size of the node becomes.
+
+\subsection{Figures from }
+\bibliographystyle{apalike}
+\bibliography{reference}
+\end{document}
