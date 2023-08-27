@@ -1,0 +1,52 @@
+\begin{thebibliography}{}
+
+\bibitem[Blondel et~al., 2008]{blondel_fast_2008}
+Blondel, V.~D., Guillaume, J.-L., Lambiotte, R., and Lefebvre, E. (2008).
+\newblock Fast unfolding of communities in large networks.
+\newblock {\em Journal of Statistical Mechanics: Theory and Experiment},
+  2008(10):P10008.
+
+\bibitem[Fair et~al., 2020]{fair_electrophysiological_2020}
+Fair, S.~R., Julian, D., Hartlaub, A.~M., Pusuluri, S.~T., Malik, G.,
+  Summerfied, T.~L., Zhao, G., Hester, A.~B., Ackerman, W.~E., Hollingsworth,
+  E.~W., Ali, M., McElroy, C.~A., Buhimschi, I.~A., Imitola, J., Maitre, N.~L.,
+  Bedrosian, T.~A., and Hester, M.~E. (2020).
+\newblock Electrophysiological {Maturation} of {Cerebral} {Organoids}
+  {Correlates} with {Dynamic} {Morphological} and {Cellular} {Development}.
+\newblock {\em Stem Cell Reports}, 15(4):855--868.
+\newblock Publisher: Elsevier.
+
+\bibitem[Kreuz et~al., 2013]{kreuz_monitoring_2013}
+Kreuz, T., Chicharro, D., Houghton, C., Andrzejak, R.~G., and Mormann, F.
+  (2013).
+\newblock Monitoring spike train synchrony.
+\newblock {\em Journal of Neurophysiology}, 109(5):1457--1472.
+
+\bibitem[Lam et~al., 2019]{lam_tissue-specific_2019}
+Lam, D., Enright, H.~A., Cadena, J., Peters, S. K.~G., Sales, A.~P., Osburn,
+  J.~J., Soscia, D.~A., Kulp, K.~S., Wheeler, E.~K., and Fischer, N.~O. (2019).
+\newblock Tissue-specific extracellular matrix accelerates the formation of
+  neural networks and communities in a neuron-glia co-culture on a
+  multi-electrode array.
+\newblock {\em Scientific Reports}, 9(1):4159.
+\newblock Number: 1 Publisher: Nature Publishing Group.
+
+\bibitem[Le~Floch et~al., 2022]{le_floch_stretchable_2022}
+Le~Floch, P., Li, Q., Lin, Z., Zhao, S., Liu, R., Tasnim, K., Jiang, H., and
+  Liu, J. (2022).
+\newblock Stretchable {Mesh} {Nanoelectronics} for {Three}-{Dimensional}
+  {Single}-{Cell} {Chronic} {Electrophysiology} from {Developing} {Brain}
+  {Organoids}.
+\newblock {\em Advanced materials (Deerfield Beach, Fla.)}, 34(11):e2106829.
+
+\bibitem[Mulansky and Kreuz, 2016]{mulansky_pyspikepython_2016}
+Mulansky, M. and Kreuz, T. (2016).
+\newblock {PySpike}—{A} {Python} library for analyzing spike train synchrony.
+\newblock {\em SoftwareX}, 5:183--189.
+
+\bibitem[Newman and Girvan, 2004]{PhysRevE.69.026113}
+Newman, M. E.~J. and Girvan, M. (2004).
+\newblock Finding and evaluating community structure in networks.
+\newblock {\em Phys. Rev. E}, 69:026113.
+
+\end{thebibliography}

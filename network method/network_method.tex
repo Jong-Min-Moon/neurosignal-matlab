@@ -1,82 +1,83 @@
 \documentclass[11pt]{article}
 \usepackage{xcolor} %textcolor
 \usepackage{amsmath}
+\usepackage{natbib}
+
 \begin{document}
 
 
 \section{Method}
-Simple methods that do not require explanation in \texttt{summary\_examples\_multichannel.mlx}
-\begin{itemize}
-	\item 0.2 ISI
-	\item 
-\end{itemize}
-\subsection{ spike detection (0.2. in \texttt{summary\_examples\_multichannel.mlx})}
-In order to detect neural spikes and build spike trains, we utilize a previous reported MATLAB spike-sorting algorithm~\cite{le_floch_stretchable_2022}.
-The signal is first filtered bandpass filtered~(\textcolor{red}{300 -- 6000 Hz or 100 -- 6000 Hz}) using the MATLAB function \texttt{bandpass}.
-Then any timepoint where the signal amplitude is lower than -\textcolor{red}{5}*standard deviation of the filtered  signal is considered as the peak of a spike.
-We slice \textcolor{red}{2} milliseconds back and forth from the peak to make a spike waveform.
+\subsection{ spike detection}
+The signal is first bandpass filtered~(\textcolor{red}{300 -- 6000 Hz or 100 -- 6000 Hz}) through the MATLAB function \texttt{bandpass}.
+We detect neural spikes using a previously reported MATLAB implementation of an algorithm developed by~\citet{le_floch_stretchable_2022}.
+By the algorithm, any timepoint is classified as a spike peak
+if its signal amplitude is lower than -\textcolor{red}{5} times of the signal standard deviation.
+A spike waveform is defined as a \textcolor{red}{4}-milliseconds-long slice of the signal centered at a spike peak.
 
 \subsection{burst detection}
-For burst detection in spike trains, we follow~\cite{fair_electrophysiological_2020} to adopt MaxInterval method. 
+Spike bursts are detected using MaxInterval method~\citet{fair_electrophysiological_2020}. 
 It defines bursts using five pre-defined threshold parameters\textemdash
-max ISI at start of burst,
-max ISI in burst,
-min burst duration,
-min interburst interval,
+maximim interspike interval at start of burst,
+maximim interspike interval in burst,
+minimum burst duration,
+minimum interburst interval,
 and
-min number of spikes in burst.
-Any series of spikes that satisfies all of these thresholds is considered as a burst. We set the threshold as \textcolor{red}{300, 301, 10, 50, 200}, respectively.
+minimum number of spikes in burst.
+Any series of spikes that satisfies all of these thresholds is considered as a burst.
+We set the threshold as \textcolor{red}{300, 301, 10, 50, 200}, respectively.
 
 \subsection{spike sorting through PCA and k-means~(0.4, 0.5 in \texttt{summary\_examples\_multichannel.mlx})}
 In order to sort the detected spike waveforms that originates from different neurons, we apply dimension reduction and clustering algorithms.
-We first use principal component analysis (MATLAB function \texttt{pca} to reduce each high-dimensional spike waveform into vectors residing in a \textcolor{red}{two}-dimensional feature space.
-Then we cluster these reduced vectors using k-means clustering algorithm (MATLAB function \texttt{kmeans}), which clusters the vectors into the pre-specified number of groups.
+We first use principal component analysis (MATLAB function \texttt{pca}) to reduce each high-dimensional spike waveform into vectors residing in a \textcolor{red}{two}-dimensional feature space.
+These vectors are then clustered into pre-specified number of groups, using the k-means algorithm~(MATLAB function \texttt{kmeans}).
 We set the number of groups as \textcolor{red}{3}.
 
 \subsection{Spike sorting quality metrics}
-In order to assess how each spike clusteris well-separated from the spikes outside of the cluster, we adopt two measurements, namely L-ratio and isolation distance. 
-Both measurements build on Malhalanobis distance between the $C$-th cluster and an $i$-th spike $x_i$ on the \textcolor{red}{two}-dimensional feature space.
-The Mahalanobis distance accounts for the correlation between dimensions when measuring the distance, and is defined as follows:
+We adopt two measurements, namely L-ratio and isolation distance, 
+to assess how each spike cluster is well-separated from the others.
+Both measurements build on Malhalanobis distance, which accounts for the correlation between dimensions when measuring the distance between a cluster and a spike.
+On the \textcolor{red}{two}-dimensional feature space of spikes,
+the squared Malhalanobis distance between a cluster $C$ and a spike $x_i$  is defined as follows:
 \begin{align*}
-	D_{i,C}:= (x_i-\mu_c)^\top
+	D_{i,C}^2:= (x_i-\mu_c)^\top
 	\Sigma_c^{-1}
-	(x_i-\mu_C)
+	(x_i-\mu_C),
 \end{align*}
-where $\mu_C$ and $\Sigma_C$ are the mean vector and the covariance matrix of the spike vectors in cluster $C$, respectively.
-L-ratio assumes that the distribution of the spikes in the cluster $C$ follows a multivariate normal distribution, and is calculated as follows:
+where $\mu_C$ and $\Sigma_C$ are the mean vector and the covariance matrix of the spike vectors belonging to cluster $C$, respectively.
+L-ratio assumes that the spike distribution if the cluster $C$ follows a multivariate normal distribution, and is calculated as follows:
 \begin{align*}
 	L_{ratio} :=
 	\frac{\sum_{i \notin C}
 	\bigl(1-CDF_{\chi^2}(D_{i,C}^2)
 	\bigr)}
-	{\text{number of spikes in the cluster C}},n
-\end{align*}where $i \notin C$ indicates the set of spikes which do not belong the the cluster $C$, and $CDF_{\chi^2}$ presents the cumulative distribution function of the chi-square  distribution with degree of freedom $=$ \textcolor{red}{2}.
-\textcolor{blue}{jongmin: degree of freedom should equal to the number of principal components}
+	{n_C},
+\end{align*}
+where $i \notin C$ indicates the set of spikes which do not belong the  cluster $C$,
+$CDF_{\chi^2}$ represents the cumulative distribution function of the chi-square  distribution with degree of freedom $=$ \textcolor{red}{2},
+\textcolor{blue}{jongmin: degree of freedom should is equal to the number of principal components.}
+and $n_C$ indicates the number of cluster belonging to the cluster $C$.
+Isolation distance, on the other hand, is defined as the Malhalanobis distance of the $n_C$-th closest out-of-cluster spike.
 
 
 
 \subsection{3d network graph}
-
-
-In order to measure the connectivity between electrodes, we follow the synchronized score approach of \cite{lam_tissue-specific_2019}.
-To calculate the synchronized score between two spike trains, we first measure SPIKE-distance~\cite{kreuz_monitoring_2013} using Python environment~(version 3.9.2) and Python package \textsc{Pyspike}~(version 0.7.0)~\cite{mulansky_pyspikepython_2016}.
+Follow the approach of \cite{lam_tissue-specific_2019},
+we quantify the synchronization level between two electrodes using the SPIKE-distance~\citep{kreuz_monitoring_2013} between the spike trains.
+For the calculation of SPIKE-distance, we use Python package \textsc{Pyspike}~(version 0.7.0)~\cite{mulansky_pyspikepython_2016} on a Python environment~(version 3.9.2).
 \textcolor{red}{The SPIKE-distance is normalized to average of 1000 randomly generated baseline values; each baseline value is the SPIKE-distance between two uniformly randomly generated spike trains.}
-Then, synchronized scores are defined as SPIKE-distance values subtracted from 1.
-These sync scores range from 0 to 1, where a higher score indicates a high degree of synchrony.
+Then, synchronization score is defined as SPIKE-distance values subtracted from 1.
+This score ranges from 0 to 1, where a higher score indicates a high level of synchrony.
 
-
-
-
-Community structure on the electrodes is examined by graph-theoretic Louvain algorithm~\cite{PhysRevE.69.026113, blondel_fast_2008} which is based on modularity optimization.
+Based on this synchronization score,  community structure on the electrodes is examined by graph-theoretic Louvain algorithm~\citep{PhysRevE.69.026113, blondel_fast_2008} which is based on modularity optimization.
 In the analysis, we model the electrodes as nodes~(e.g., circles in the network map), whose 3d positions represent the position of the actual electrode. 
-We set synchronized scores between every pair of active electrodes as edge~(e.g., lines in the network map) weights between the corresponding nodes.
-The edges with synchronized scores less than \textcolor{red}{0.5} were filtered out.
+We set the synchronized scores between every pair of active electrodes as edge~(e.g., lines in the network map) weights between the corresponding nodes.
+Edges with synchronized scores less than \textcolor{red}{0.5} were filtered out.
 The result of the Louvain algorithm is visualized through color and size, using the Python package \texttt{plotly}~(version  5.9.0).
-Nodes with the same color (i.e., electrodes) belong to the same community network.
-Synchronization scores are color-mapped, ranged from \textcolor{red}{0 (blue) to 1 (red)}.
-In addition, the larger the number of connected electrodes becomes, the larger the size of the node becomes.
+Nodes with the same color (i.e., electrodes) represent electrodes belonging to the same community network.
+Synchronization scores are color-mapped, ranging from \textcolor{red}{0 (blue) to 1 (red)}.
+In addition, the node size indicates the number of connected electrodes.
 
-\subsection{Figures from }
+
 \bibliographystyle{apalike}
 \bibliography{reference}
 \end{document}
