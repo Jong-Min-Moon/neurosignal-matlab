@@ -1,5 +1,6 @@
 \documentclass[11pt]{article}
 \usepackage{xcolor} %textcolor
+\usepackage{amsmath}
 \begin{document}
 
 
@@ -28,11 +29,31 @@ Any series of spikes that satisfies all of these thresholds is considered as a b
 
 \subsection{spike sorting through PCA and k-means~(0.4, 0.5 in \texttt{summary\_examples\_multichannel.mlx})}
 In order to sort the detected spike waveforms that originates from different neurons, we apply dimension reduction and clustering algorithms.
-We first use principal component analysis (MATLAB function \texttt{pca} to reduce each spike waveform into a two-dimensional vector.
+We first use principal component analysis (MATLAB function \texttt{pca} to reduce each high-dimensional spike waveform into vectors residing in a \textcolor{red}{two}-dimensional feature space.
 Then we cluster these reduced vectors using k-means clustering algorithm (MATLAB function \texttt{kmeans}), which clusters the vectors into the pre-specified number of groups.
 We set the number of groups as \textcolor{red}{3}.
 
 \subsection{Spike sorting quality metrics}
+In order to assess how each spike clusteris well-separated from the spikes outside of the cluster, we adopt two measurements, namely L-ratio and isolation distance. 
+Both measurements build on Malhalanobis distance between the $C$-th cluster and an $i$-th spike $x_i$ on the \textcolor{red}{two}-dimensional feature space.
+The Mahalanobis distance accounts for the correlation between dimensions when measuring the distance, and is defined as follows:
+\begin{align*}
+	D_{i,C}:= (x_i-\mu_c)^\top
+	\Sigma_c^{-1}
+	(x_i-\mu_C)
+\end{align*}
+where $\mu_C$ and $\Sigma_C$ are the mean vector and the covariance matrix of the spike vectors in cluster $C$, respectively.
+L-ratio assumes that the distribution of the spikes in the cluster $C$ follows a multivariate normal distribution, and is calculated as follows:
+\begin{align*}
+	L_{ratio} :=
+	\frac{\sum_{i \notin C}
+	\bigl(1-CDF_{\chi^2}(D_{i,C}^2)
+	\bigr)}
+	{\text{number of spikes in the cluster C}},n
+\end{align*}where $i \notin C$ indicates the set of spikes which do not belong the the cluster $C$, and $CDF_{\chi^2}$ presents the cumulative distribution function of the chi-square  distribution with degree of freedom $=$ \textcolor{red}{2}.
+\textcolor{blue}{jongmin: degree of freedom should equal to the number of principal components}
+
+
 
 \subsection{3d network graph}
 
