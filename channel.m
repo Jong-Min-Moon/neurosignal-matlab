@@ -408,7 +408,7 @@ classdef channel < handle
 
             rng(seednum); % 시드 넘버 설정
             [clusters, centroid] = kmeans(ch.PCScores, clusternum);%주어진 cluster개수로 kmeans 실행 
-            ch.clusters = clusters; %클러스터 membership 저장
+            ch.clusters = clusters'; %클러스터 membership 저장
             ch.nClusters = clusternum; %클러스터 개수 저장 
 
             % 클러스터당 spike 개수
