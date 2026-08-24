@@ -14,7 +14,7 @@ Based on the MATLAB Live Script provided, here is a summary documentation for th
 
 ---
 
-# API Documentation: CyborgBrainOrg Analysis
+# API Documentation
 
 ## 1. Class: `channelReader`
 **Purpose:** Handles file I/O operations for reading Brain and Retina multi-channel data files.
